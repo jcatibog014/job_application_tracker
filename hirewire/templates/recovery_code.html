@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Your Recovery Code - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="narrow">
+    <h1>{% if reason == 'signup' %}Welcome to Hire Wire{% else %}Your New Recovery Code{% endif %}</h1>
+    <div class="card">
+      <p>Write this code down or save it in your password manager. If you forget your password, it is the only way back into your account.</p>
+      <p class="recovery-code" data-copy-text>{{ code }}</p>
+      <p class="card-note">This page shows the code only once.{% if reason != 'signup' %} Your old code no longer works.{% endif %}</p>
+      <div class="form-actions">
+        <button class="button button-quiet" type="button" data-copy-button hidden>Copy code</button>
+        <a class="button" href="{{ url_for('dashboard.index') }}">I saved it</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}

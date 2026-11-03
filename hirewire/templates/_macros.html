@@ -1,0 +1,64 @@
+{# Small building blocks used by many pages. #}
+
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro field(name, label, value='', error=None, type='text', hint=None, attrs='') %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <input type="{{ type }}" name="{{ name }}" value="{{ value if value is not none else '' }}" {{ attrs|safe }}
+           {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro textarea(name, label, value='', error=None, hint=None, rows=4, attrs='') %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <textarea name="{{ name }}" rows="{{ rows }}" {{ attrs|safe }}
+              {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>{{ value or '' }}</textarea>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{# options: a list of (value, label) pairs. #}
+{% macro select(name, label, options, selected='', error=None, hint=None, attrs='') %}
+  <label class="field{% if error %} has-error{% endif %}">
+    <span class="field-label">{{ label }}{% if hint %} <span class="hint">{{ hint }}</span>{% endif %}</span>
+    <select name="{{ name }}" {{ attrs|safe }} {% if error %}aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}>
+      {% for value, text in options %}
+        <option value="{{ value }}"{% if value|string == selected|string %} selected{% endif %}>{{ text }}</option>
+      {% endfor %}
+    </select>
+    {% if error %}<p class="field-error" id="{{ name }}-error">{{ error }}</p>{% endif %}
+  </label>
+{% endmacro %}
+
+{% macro pencil_icon() %}
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 20l1-4L16 5a2 2 0 0 1 3 3L8 19z"></path>
+    <line x1="14" y1="7" x2="17" y2="10"></line>
+  </svg>
+{% endmacro %}
+
+{# The app's mark: two points joined by a wire. #}
+{% macro mark() %}
+  <svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+    <rect width="32" height="32" rx="8" fill="currentColor"></rect>
+    <path d="M9 21 C 13 21, 13 11, 17 11 S 21 21, 23 21" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"></path>
+    <circle cx="9" cy="21" r="2.6" fill="#fff"></circle>
+    <circle cx="23" cy="21" r="2.6" fill="#fff"></circle>
+  </svg>
+{% endmacro %}
+
+{% macro wordmark(href) %}
+  <a class="wordmark" href="{{ href }}">{{ mark() }}<span>Hire Wire</span></a>
+{% endmacro %}
+
+{# A row of the empty kind: a title and one sentence, never a stand-in picture. #}
+{% macro empty(title, text, button_href=None, button_text=None) %}
+  <div class="empty-state">
+    <h2>{{ title }}</h2>
+    <p>{{ text }}</p>
+    {% if button_href %}<a class="button" href="{{ button_href }}">{{ button_text }}</a>{% endif %}
+  </div>
+{% endmacro %}

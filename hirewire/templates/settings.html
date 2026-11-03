@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select %}
+{% block title %}Settings - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {# The demo sees these as examples, switched off. The server refuses its changes anyway. #}
+  {% set locked = 'disabled' if g.user.is_demo else '' %}
+  <div class="settings">
+    <div class="page-head"><h1>Settings</h1></div>
+
+    {# The theme lives in the browser, so this needs JavaScript. app.js shows it. #}
+    <section class="setting" data-theme-settings hidden>
+      <div class="setting-text">
+        <h2>Appearance</h2>
+        <p>Device follows your phone or computer. This choice is saved on this device only.</p>
+      </div>
+      <fieldset class="theme-choice">
+        <legend class="visually-hidden">Theme</legend>
+        <label><input type="radio" name="theme" value="system"><span>Device</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </fieldset>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Time Zone</h2>
+        <p>Interview times, reminders and "today" follow this place.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="timezone">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ select('timezone', 'Time zone', timezones, g.user.timezone, errors.timezone) }}
+          <div class="form-actions"><button class="button" type="submit">Save time zone</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Password</h2>
+        <p>Changing your password logs you out on your other devices.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="password">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('current_password', 'Current password', '', errors.current_password, type='password', attrs='autocomplete="current-password" required') }}
+          {{ field('new_password', 'New password', '', errors.new_password, type='password', hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+          {{ field('confirm_password', 'New password again', type='password', attrs='autocomplete="new-password" required') }}
+          <div class="form-actions"><button class="button" type="submit">Change password</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Recovery Code</h2>
+        <p>Lost the code you saved at sign-up? Make a new one. The old one stops working.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="recovery">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('password', 'Your password', '', errors.recovery_password, type='password', attrs='autocomplete="current-password" required') }}
+          <div class="form-actions"><button class="button" type="submit">Make new code</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Account</h2>
+        {% if g.user.is_demo %}
+          <p>You are using the demo, so the settings above are only examples.</p>
+        {% else %}
+          <p>You are logged in as {{ g.user.username }}.</p>
+        {% endif %}
+      </div>
+      <div class="form-actions setting-account-actions">
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ csrf() }}
+          <button class="button button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Delete Account</h2>
+        <p>Deletes your account and every application, contact and file in it. This can't be undone.</p>
+      </div>
+      <form method="post" data-confirm="Delete your account and everything in it?">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="delete">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('password', 'Your password', '', errors.delete_password, type='password', attrs='autocomplete="current-password" required') }}
+          <div class="form-actions"><button class="button button-danger" type="submit">Delete account</button></div>
+        </fieldset>
+      </form>
+    </section>
+  </div>
+{% endblock %}

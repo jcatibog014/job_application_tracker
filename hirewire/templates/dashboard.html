@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}Dashboard - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head"><h1>Dashboard</h1></div>
+  {{ empty('Nothing Here Yet', 'Your applications, interviews and follow-ups will show here.') }}
+{% endblock %}

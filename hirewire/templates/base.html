@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ APP_NAME }}{% endblock %}</title>
+  <meta name="description" content="Hire Wire keeps track of your job applications, interviews and follow-ups.">
+  <link rel="icon" href="{{ url_for('static', filename='icon.svg') }}" type="image/svg+xml">
+  <meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#11161c" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {# Before the page draws, so a saved dark theme never flashes white. #}
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</head>
+<body class="{% block body_class %}{% if g.user %}app-layout{% endif %}{% endblock %}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  {% block header %}{% if g.user %}{% include "_sidebar.html" %}{% endif %}{% endblock %}
+
+  <main id="main" class="page {% block page_class %}{% endblock %}">
+    {% if g.user and g.user.is_demo %}
+      <p class="demo-note">You are in the demo. Your changes are only yours, and this sample account is deleted after 2 hours.</p>
+    {% endif %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flashes" role="status">
+          {% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

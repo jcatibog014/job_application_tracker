@@ -1,0 +1,11 @@
+Flask>=3.1,<4
+SQLAlchemy>=2.0,<2.2  # the ORM: models.py is the data model in Python classes
+alembic>=1.13,<2  # database migrations (flask --app hirewire upgrade-db)
+psycopg[binary]>=3.2,<4  # talks to PostgreSQL (Neon) on the live site; SQLite needs nothing extra
+icalendar>=6,<8  # writes the calendar feed, and reads .ics invites attached to emails
+cryptography>=44  # encrypts Gmail app passwords (Fernet)
+requests>=2.32,<3  # fetches job pages for "Quick add from link"
+beautifulsoup4>=4.12,<5  # reads those pages (and HTML emails)
+tzdata>=2025.1  # time zone data (Windows doesn't have it built in)
+gunicorn>=23  # the web server on Render (Linux only; locally use "flask run")
+pytest>=8
