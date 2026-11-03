@@ -103,16 +103,35 @@ def alembic_config():
     return config
 
 
-def upgrade_db():
+def upgrade_db(revision="head"):
     """Run the Alembic migrations that this database hasn't had yet.
 
     It keeps all data, and does nothing when the tables are up to date.
     Render runs it before every start (render.yaml).
     """
     config = alembic_config()
-    with engine().begin() as connection:
-        config.attributes["connection"] = connection  # migrations/env.py uses it
-        command.upgrade(config, "head")
+    with engine().connect() as connection:
+        sqlite = connection.dialect.name == "sqlite"
+        if sqlite:
+            # SQLite changes a table by copying it and DROPPING the old one. With
+            # foreign keys on, that drop deletes every row pointing at the old table
+            # (ON DELETE CASCADE): changing "users" would empty every other table.
+            # The switch only works outside a transaction, so commit straight after.
+            connection.exec_driver_sql("PRAGMA foreign_keys = OFF")
+            connection.commit()
+        try:
+            with connection.begin():
+                config.attributes["connection"] = connection  # migrations/env.py uses it
+                command.upgrade(config, revision)
+            if sqlite:
+                broken = connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
+                if broken:
+                    raise RuntimeError(f"The upgrade left {len(broken)} broken links between tables: {broken[:5]}")
+        finally:
+            if sqlite:
+                connection.rollback()
+                connection.exec_driver_sql("PRAGMA foreign_keys = ON")
+                connection.commit()
 
 
 @click.command("upgrade-db")

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% set title = 'Edit Interview' if interview else 'Add Interview' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('applications.detail', job_id=job.id) }}#interviews">&larr; {{ job.role_title }} at {{ job.company.name }}</a>
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    {% if not interview and job.stage in ('applied', 'screening', 'no_reply') %}
+      <p class="page-sub">Saving it also moves this application to Interview.</p>
+    {% endif %}
+  </div>
+  {% if errors %}<p class="form-error" role="alert">Please check the fields marked below.</p>{% endif %}
+  <form method="post" class="card form-card"
+        action="{{ url_for('reminders.edit_interview', interview_id=interview.id) if interview else url_for('reminders.new_interview', job_id=job.id) }}">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('starts_at', 'Day and time', values.starts_at|input_datetime if values.starts_at else '', errors.starts_at,
+               type='datetime-local', hint='Your time zone: ' ~ g.user.timezone.replace('_', ' '), attrs='required') }}
+      {{ select('minutes', 'How long', lengths, values.minutes) }}
+      {{ select('kind', 'Kind', kinds, values.kind, errors.kind) }}
+      {{ field('with_whom', 'With', values.with_whom, errors.with_whom, attrs='maxlength="200" placeholder="Ms. Reyes, HR manager"') }}
+      <div class="span-2">
+        {{ field('place', 'Where', values.place, errors.place, hint='An address, or the video call link',
+                 attrs='maxlength="500" placeholder="https://meet.example.com/abc or 12F Ayala Tower, Makati"') }}
+      </div>
+      <div class="span-2">
+        {{ textarea('prep_notes', 'Preparation notes', values.prep_notes, errors.prep_notes, rows=6,
+                    hint='Questions to ask, stories to tell, what to bring') }}
+      </div>
+      {% if interview %}
+        {{ select('outcome', 'How it went', outcomes, values.outcome) }}
+      {% endif %}
+    </div>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('applications.detail', job_id=job.id) }}#interviews">Cancel</a>
+      <button class="button" type="submit">{{ 'Save changes' if interview else 'Add interview' }}</button>
+    </div>
+  </form>
+  {% if interview %}
+    <div class="danger-row">
+      <form method="post" action="{{ url_for('reminders.delete_interview', interview_id=interview.id) }}" data-confirm="Delete this interview?">
+        {{ csrf() }}<button class="button button-danger" type="submit">Delete interview</button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

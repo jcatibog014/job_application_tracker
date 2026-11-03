@@ -36,6 +36,62 @@
       </form>
     </section>
 
+    <section class="setting" id="reminders">
+      <div class="setting-text">
+        <h2>Reminders</h2>
+        <p>Hire Wire adds these follow-ups for you. They go away by themselves when they stop making sense.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="reminders">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ select('follow_up_days', 'Follow up on an application', follow_up_days, g.user.follow_up_days, errors.follow_up_days) }}
+          {{ select('no_reply_days', 'Ask "Mark as No reply?"', no_reply_days, g.user.no_reply_days, errors.no_reply_days,
+                    hint='When Applied or Screening has had no news') }}
+          <label class="check"><input type="checkbox" name="thank_you_notes" value="1"{% if g.user.thank_you_notes %} checked{% endif %}>
+            Remind me to send a thank-you note the day after an interview</label>
+          <div class="form-actions"><button class="button" type="submit">Save reminders</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting" id="calendar">
+      <div class="setting-text">
+        <h2>Calendar Feed</h2>
+        <p>Put your interviews and follow-ups in Google Calendar, Apple Calendar or Outlook, so your phone reminds you.</p>
+        <p>Calendar apps check the link every few hours (Google: about every 12 to 24 hours).</p>
+      </div>
+      <div class="stack">
+        {% if feed_url %}
+          <label class="field">
+            <span class="field-label">Your private calendar link <span class="hint">Anyone with it can see your schedule</span></span>
+            <input class="copy-line" type="text" value="{{ feed_url }}" readonly data-copy-text>
+          </label>
+          <ol class="steps">
+            <li>On a computer, open Google Calendar.</li>
+            <li>Next to <strong>Other calendars</strong>, press <strong>+</strong>, then <strong>From URL</strong>.</li>
+            <li>Paste the link and press <strong>Add calendar</strong>. It shows on your phone too.</li>
+          </ol>
+          <div class="form-actions setting-account-actions">
+            <button class="button" type="button" data-copy-button hidden>Copy link</button>
+            <form method="post" data-confirm="Make a new link? The old one stops working, so calendars using it stop updating.">
+              {{ csrf() }}<input type="hidden" name="action" value="calendar_on">
+              <button class="button button-quiet" type="submit" {{ locked }}>Make a new link</button>
+            </form>
+            <form method="post">
+              {{ csrf() }}<input type="hidden" name="action" value="calendar_off">
+              <button class="button button-quiet" type="submit" {{ locked }}>Turn off</button>
+            </form>
+          </div>
+        {% else %}
+          <form method="post" class="form-actions setting-account-actions">
+            {{ csrf() }}<input type="hidden" name="action" value="calendar_on">
+            <button class="button" type="submit" {{ locked }}>Make calendar link</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
     <section class="setting">
       <div class="setting-text">
         <h2>Your Password</h2>

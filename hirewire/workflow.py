@@ -15,6 +15,7 @@ and lets reminders.py react (a follow-up after applying, for example).
 """
 from sqlalchemy import select
 
+from . import reminders
 from .dates import local_today
 from .models import (
     ACCEPTED, ACTIVE_STAGES, APPLIED, CLOSED_STAGES, DECLINED, INTERVIEW, NO_REPLY, OFFER, REJECTED, SAVED,
@@ -83,13 +84,16 @@ def came_from_many(s, job_ids):
     return dict(rows)  # later rows replace earlier ones, so the newest wins
 
 
-def start(s, job, stage, moment, source="manual"):
-    """A new application begins at stage. Its history starts with this row."""
+def start(s, job, stage, moment, source="manual", user=None):
+    """A new application begins at stage. Its history starts with this row.
+    With the user, its automatic reminders start too."""
     if stage not in ACTIVE_STAGES:
         raise MoveNotAllowed("A new application starts at Saved, Applied, Screening, Interview or Offer.")
     job.stage = stage
     job.stage_changed_at = moment
     s.add(StageChange(application=job, from_stage=None, to_stage=stage, changed_at=moment, source=source))
+    if user is not None:
+        reminders.on_move(s, job, None, user, moment)
 
 
 def move(s, job, to_stage, user, moment, note="", source="manual"):
@@ -107,11 +111,7 @@ def move(s, job, to_stage, user, moment, note="", source="manual"):
     job.updated_at = moment
     if to_stage != SAVED and job.applied_on is None:
         job.applied_on = local_today(user.timezone, moment)
-    on_move(s, job, before, user, moment)
-
-
-def on_move(s, job, before, user, moment):
-    """Other parts of the app react to a move here (reminders, in stage 5)."""
+    reminders.on_move(s, job, before, user, moment)
 
 
 def describe(change):

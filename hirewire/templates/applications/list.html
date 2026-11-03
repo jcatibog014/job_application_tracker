@@ -46,7 +46,10 @@
               <label class="toggle-pill"><input type="checkbox" name="stage" value="{{ value }}"{% if value in f.stages %} checked{% endif %}><span>{{ label }}</span></label>
             {% endfor %}
           </div>
-          <label class="check"><input type="checkbox" name="closed" value="1"{% if f.closed %} checked{% endif %}> Also show closed ones when no stage is chosen</label>
+          <div class="check-row">
+            <label class="check"><input type="checkbox" name="closed" value="1"{% if f.closed %} checked{% endif %}> Also show closed ones when no stage is chosen</label>
+            <label class="check"><input type="checkbox" name="followup" value="due"{% if f.follow_up_due %} checked{% endif %}> Only ones with a follow-up due</label>
+          </div>
         </fieldset>
         <fieldset class="filter-group span-all">
           <legend>Work mode</legend>
@@ -74,6 +77,13 @@
         <label class="field">
           <span class="field-label">Applied until</span>
           <input type="date" name="to" value="{{ f.applied_to.isoformat() if f.applied_to }}">
+        </label>
+        <label class="field">
+          <span class="field-label">Interviews</span>
+          <select name="interview">
+            <option value="">Any</option>
+            {% for value, label in interview_choices.items() %}<option value="{{ value }}"{% if f.interview == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
         </label>
         <label class="field">
           <span class="field-label">Pay at least</span>

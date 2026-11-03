@@ -504,6 +504,73 @@ img { max-width: 100%; height: auto; display: block; }
   .phone-only { display: inline; }
 }
 
+/* ---------- The Dashboard ---------- */
+
+.stat-row { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: .75rem; margin: 0 0 1.25rem; padding: 0; }
+.stat { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; height: 100%; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; }
+.stat:hover { border-color: var(--accent); color: var(--ink); }
+.stat-number { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.stage-closed { background: var(--stage-saved-bg); color: var(--stage-saved-ink); }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .1rem 1rem; padding: .55rem 0; border-bottom: 1px solid var(--rule); font-size: .93rem; }
+.activity-list li:first-child { padding-top: 0; }
+.activity-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.activity-list a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.activity-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ---------- Reminders and interviews ---------- */
+
+.reminder-list { list-style: none; margin: 0; padding: 0; }
+.reminder, .interview-row { display: flex; align-items: flex-start; gap: .75rem 1rem; padding: .75rem 0; border-bottom: 1px solid var(--rule); }
+.reminder-list > li:first-child { padding-top: 0; }
+.reminder-list > li:last-child { border-bottom: 0; padding-bottom: 0; }
+.reminder { flex-wrap: wrap; justify-content: space-between; }
+.reminder-text, .interview-text { flex: 1 1 14rem; min-width: 0; }
+.reminder-text p, .interview-text p { margin: 0; }
+.reminder-job { display: block; color: var(--ink); font-weight: 600; text-decoration: none; }
+.reminder-job:hover { color: var(--accent); text-decoration: underline; }
+.reminder-note { color: var(--ink); }
+.reminder-when { color: var(--ink-soft); font-size: .85rem; }
+.is-overdue .reminder-when { color: var(--danger); font-weight: 600; }
+.is-nudge .reminder-when { color: var(--warning-ink); }
+.reminder-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+.snooze { position: relative; }
+.snooze summary { list-style: none; }
+.snooze summary::-webkit-details-marker { display: none; }
+.snooze-menu { position: absolute; right: 0; top: calc(100% + .3rem); z-index: 4; display: grid; min-width: 8rem; margin: 0; padding: .3rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-small); box-shadow: 0 .25rem 1rem rgb(0 0 0 / .12); }
+.snooze-menu .link-button { padding: .4rem .6rem; border-radius: var(--radius-small); color: var(--ink); text-align: left; }
+.snooze-menu .link-button:hover { background: var(--surface-soft); text-decoration: none; }
+.icon-link { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: var(--radius-small); color: var(--ink-soft); }
+.icon-link:hover { background: var(--surface-soft); color: var(--accent); }
+.date-tile { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 3.1rem; height: 3.3rem; border: 1px solid var(--rule); border-radius: var(--radius-small); background: var(--surface-soft); line-height: 1.1; }
+.date-month { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); }
+.date-day { font-size: 1.2rem; font-weight: 700; }
+.interview-when { font-weight: 600; }
+.interview-row.is-cancelled .interview-text { color: var(--ink-soft); text-decoration: line-through; }
+.outcome { display: inline-block; margin-left: .4rem; padding: 0 .5rem; border-radius: 999px; font-size: .75rem; font-weight: 600; text-decoration: none; }
+.outcome-passed { background: var(--stage-offer-bg); color: var(--stage-offer-ink); }
+.outcome-failed { background: var(--stage-rejected-bg); color: var(--stage-rejected-ink); }
+.outcome-cancelled { background: var(--stage-saved-bg); color: var(--stage-saved-ink); }
+.outcome-form { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; margin: .5rem 0 0; }
+.prep { margin-top: .35rem; font-size: .9rem; }
+.prep summary { cursor: pointer; color: var(--accent); width: max-content; }
+.prep .notes-text { margin-top: .5rem; padding-top: 0; border-top: 0; }
+/* In the narrow side column: the note on its own line, then the day and Add. */
+.follow-up-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; margin: 1rem 0 0; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.follow-up-form input[name="note"] { grid-column: 1 / -1; }
+.done-list { margin-top: 1rem; font-size: .9rem; }
+.done-list summary { cursor: pointer; color: var(--ink-soft); width: max-content; }
+.done-list ul { list-style: none; margin: .5rem 0 0; padding: 0; }
+.done-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .35rem 0; }
+.done-note { text-decoration: line-through; color: var(--ink-soft); }
+.timeline-interview::before { background: var(--stage-interview-ink); border-color: var(--stage-interview-ink); }
+.timeline-follow_up::before { border-color: var(--stage-offer-ink); }
+.check-row { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.schedule-day h2 { font-size: 1.05rem; margin-bottom: .9rem; }
+.is-overdue-day { border-left: 3px solid var(--danger); }
+.steps { margin: 0; padding-left: 1.3rem; color: var(--ink-soft); font-size: .93rem; display: grid; gap: .25rem; }
+.narrow-form { max-width: 34rem; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

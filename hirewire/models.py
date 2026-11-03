@@ -1,7 +1,9 @@
 """The data model.
 
     users ─┬─< companies ──< applications ─┬─< notes
-           └─< applications                └─< stage_changes
+           ├─< applications                ├─< stage_changes
+           └─< saved_views                 ├─< interviews
+                                           └─< follow_ups
 
 Every row belongs to one user, and every query starts from that user
 (ownership.py), so nobody can see anyone else's job hunt. Deleting a user
@@ -69,6 +71,12 @@ class User(Base):
     # (after a password change), because old cookies stop matching.
     session_version: Mapped[int] = mapped_column(default=1)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
+    # Reminders (Settings). 0 days means "off".
+    follow_up_days: Mapped[int] = mapped_column(default=7)  # a follow-up this many days after applying
+    thank_you_notes: Mapped[bool] = mapped_column(default=True)  # a thank-you the day after an interview
+    no_reply_days: Mapped[int] = mapped_column(default=21)  # then ask "Mark as No reply?"
+    # The secret part of the calendar feed's address (/calendar/<token>.ics). Empty when off.
+    calendar_token: Mapped[str | None] = mapped_column(String(64), unique=True)
 
 
 class Company(Base):
@@ -118,6 +126,8 @@ class Application(Base):
     applied_on: Mapped[date | None]
     # A saved copy, because postings disappear once the job is filled.
     job_description: Mapped[str] = mapped_column(Text, default="", deferred=True)
+    # "Keep waiting" on the No reply nudge hides it until this day.
+    quiet_until: Mapped[date | None]
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow)
 
@@ -127,6 +137,12 @@ class Application(Base):
     stage_changes: Mapped[list["StageChange"]] = relationship(
         back_populates="application", cascade="all, delete-orphan", passive_deletes=True,
         order_by="StageChange.changed_at")
+    interviews: Mapped[list["Interview"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="Interview.starts_at")
+    follow_ups: Mapped[list["FollowUp"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="FollowUp.due_on")
 
     @property
     def stage_label(self):
@@ -147,6 +163,69 @@ class Note(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     application: Mapped[Application] = relationship(back_populates="notes")
+
+
+INTERVIEW_KINDS = {
+    "phone": "Phone screen", "video": "Video call", "onsite": "On-site", "technical": "Technical",
+    "hr": "HR interview", "final": "Final interview",
+}
+OUTCOMES = {"pending": "Not known yet", "passed": "Passed", "failed": "Not passed", "cancelled": "Cancelled"}
+
+
+class Interview(Base):
+    """One interview round. The stage stays Interview until it moves on."""
+    __tablename__ = "interviews"
+    __table_args__ = (
+        CheckConstraint(f"kind IN ({sql_list(INTERVIEW_KINDS)})", name="kind_known"),
+        CheckConstraint(f"outcome IN ({sql_list(OUTCOMES)})", name="outcome_known"),
+        CheckConstraint("minutes BETWEEN 5 AND 600", name="minutes_sensible"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), index=True)
+    starts_at: Mapped[datetime] = mapped_column(index=True)
+    minutes: Mapped[int] = mapped_column(default=60)
+    kind: Mapped[str] = mapped_column(String(12), default="video")
+    place: Mapped[str] = mapped_column(String(500), default="")  # an address, or a video call link
+    with_whom: Mapped[str] = mapped_column(String(200), default="")
+    prep_notes: Mapped[str] = mapped_column(Text, default="")
+    outcome: Mapped[str] = mapped_column(String(10), default="pending")
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    application: Mapped[Application] = relationship(back_populates="interviews")
+
+    @property
+    def kind_label(self):
+        return INTERVIEW_KINDS[self.kind]
+
+    @property
+    def place_is_link(self):
+        return self.place.startswith(("https://", "http://"))
+
+
+AFTER_APPLIED = "after_applied"
+THANK_YOU = "thank_you"
+
+
+class FollowUp(Base):
+    """A reminder to do something about an application on a day (reminders.py)."""
+    __tablename__ = "follow_ups"
+    __table_args__ = (CheckConstraint(f"auto_kind IN ('', '{AFTER_APPLIED}', '{THANK_YOU}')", name="auto_kind_known"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), index=True)
+    due_on: Mapped[date] = mapped_column(index=True)
+    note: Mapped[str] = mapped_column(String(300), default="")
+    done_at: Mapped[datetime | None]
+    # Made by Hire Wire itself ("" when you made it). Automatic ones go away by
+    # themselves when they stop making sense (reminders.on_move).
+    auto_kind: Mapped[str] = mapped_column(String(15), default="")
+    # A thank-you belongs to its interview: deleting the interview deletes it.
+    interview_id: Mapped[int | None] = mapped_column(ForeignKey("interviews.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    application: Mapped[Application] = relationship(back_populates="follow_ups")
+    interview: Mapped["Interview | None"] = relationship()
 
 
 class SavedView(Base):

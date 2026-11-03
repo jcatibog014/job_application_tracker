@@ -20,7 +20,8 @@ bp = Blueprint("applications", __name__, url_prefix="/applications")
 
 def get_job(job_id):
     return get_mine(Application, job_id, selectinload(Application.company), selectinload(Application.notes),
-                    selectinload(Application.stage_changes), undefer(Application.job_description))
+                    selectinload(Application.stage_changes), selectinload(Application.interviews),
+                    selectinload(Application.follow_ups), undefer(Application.job_description))
 
 
 def form_page(template_values, errors, job=None):
@@ -51,7 +52,8 @@ def index():
         "applications/list.html", jobs=jobs, f=f, total=total, pages=pages, views=views,
         here=filters.view_query(request.args), chips=filters.chips(f), filtered=filters.is_filtered(f),
         stage_choices=[(stage, STAGE_LABELS[stage]) for stage in STAGES],
-        sources=SOURCES, sorts=filters.SORTS, per_page=filters.PER_PAGE, to_args=filters.to_args, sort_link=filters.sort_link)
+        sources=SOURCES, sorts=filters.SORTS, per_page=filters.PER_PAGE,
+        interview_choices=filters.INTERVIEW_CHOICES, to_args=filters.to_args, sort_link=filters.sort_link)
 
 
 @bp.post("/views")
@@ -102,7 +104,7 @@ def new():
         values["applied_on"] = local_today(g.user.timezone, moment)
     applications.apply_form(s, job, values, g.user.id, moment)
     s.add(job)
-    workflow.start(s, job, values["stage"], moment)
+    workflow.start(s, job, values["stage"], moment, user=g.user)
     s.commit()
     flash("The application has been added.")
     return redirect(url_for("applications.detail", job_id=job.id))
@@ -113,8 +115,10 @@ def new():
 def detail(job_id):
     job = get_job(job_id)
     forward, endings, back = workflow.group_moves(job.stage, workflow.came_from(db.session(), job))
+    moment = utcnow()
     return render_template("applications/detail.html", job=job, timeline=applications.timeline(job),
-                           forward=forward, endings=endings, back=back)
+                           forward=forward, endings=endings, back=back, now=moment,
+                           today=local_today(g.user.timezone, moment))
 
 
 def wants_json():

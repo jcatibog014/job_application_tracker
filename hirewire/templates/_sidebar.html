@@ -2,9 +2,11 @@
 {# The menu only moves between pages. Preferences and Log out are in Settings
    (and Log out in the account menu at the bottom). #}
 {% set section = request.blueprint %}
-{% macro link(endpoint, label, sections, count=0) %}
+{# Interview and follow-up forms belong to an application, so Applications is lit for them. #}
+{% set on_schedule = request.endpoint == 'reminders.schedule' %}
+{% macro link(endpoint, label, active, count=0) %}
   <li>
-    <a href="{{ url_for(endpoint) }}"{% if section in sections %} aria-current="page"{% endif %}>
+    <a href="{{ url_for(endpoint) }}"{% if active %} aria-current="page"{% endif %}>
       <span>{{ label }}</span>{% if count %}<span class="badge">{{ count }}<span class="visually-hidden"> waiting</span></span>{% endif %}
     </a>
   </li>
@@ -19,13 +21,14 @@
   <div class="sidebar-menu" id="app-nav">
     <nav aria-label="Main">
       <ul class="nav-links">
-        {{ link('dashboard.index', 'Dashboard', ['dashboard']) }}
-        {{ link('applications.index', 'Applications', ['applications']) }}
-        {{ link('board.index', 'Board', ['board']) }}
-        {{ link('companies.index', 'Companies', ['companies']) }}
+        {{ link('dashboard.index', 'Dashboard', section == 'dashboard') }}
+        {{ link('applications.index', 'Applications', section == 'applications' or section == 'reminders' and not on_schedule) }}
+        {{ link('board.index', 'Board', section == 'board') }}
+        {{ link('reminders.schedule', 'Schedule', on_schedule, attention_count) }}
+        {{ link('companies.index', 'Companies', section == 'companies') }}
       </ul>
       <ul class="nav-links nav-links-end">
-        {{ link('settings.index', 'Settings', ['settings']) }}
+        {{ link('settings.index', 'Settings', section == 'settings') }}
       </ul>
     </nav>
     <div class="sidebar-foot">

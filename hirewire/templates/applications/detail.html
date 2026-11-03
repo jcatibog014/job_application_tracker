@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import csrf, outside_link, pencil_icon, stage_pill %}
+{% from "_reminders.html" import date_tile, follow_up_row %}
 {% block title %}{{ job.role_title }} at {{ job.company.name }} - {{ APP_NAME }}{% endblock %}
 {% block content %}
   <a class="back-link" href="{{ url_for('applications.index') }}">&larr; Applications</a>
@@ -48,6 +49,48 @@
           <p class="card-note">This application is closed. Rejected and Withdrawn can only go back to where they came from.</p>
         {% endif %}
       </section>
+      <section class="card" id="interviews">
+        <div class="card-head">
+          <h2>Interviews</h2>
+          <a class="button button-quiet button-small" href="{{ url_for('reminders.new_interview', job_id=job.id) }}">Add interview</a>
+        </div>
+        {% if job.interviews %}
+          <ul class="reminder-list">
+            {% for interview in job.interviews %}
+              {% set day = interview.starts_at|local_day %}
+              <li class="interview-row{% if interview.outcome == 'cancelled' %} is-cancelled{% endif %}">
+                {{ date_tile(day) }}
+                <div class="interview-text">
+                  <p class="interview-when">{{ day.strftime('%a') }}, {{ day|short_day }} · {{ interview.starts_at|nice_time }} · {{ interview.kind_label }}
+                    {% if interview.outcome != 'pending' %}<span class="outcome outcome-{{ interview.outcome }}">{{ OUTCOMES[interview.outcome] }}</span>{% endif %}</p>
+                  {% if interview.with_whom or interview.place %}
+                    <p class="muted small">
+                      {%- if interview.with_whom %}With {{ interview.with_whom }}{% endif -%}
+                      {%- if interview.with_whom and interview.place %} · {% endif -%}
+                      {%- if interview.place_is_link %}{{ outside_link(interview.place, 'Join link') }}{% elif interview.place %}{{ interview.place }}{% endif -%}
+                    </p>
+                  {% endif %}
+                  {% if interview.prep_notes %}
+                    <details class="prep"><summary>Preparation notes</summary><p class="notes-text">{{ interview.prep_notes }}</p></details>
+                  {% endif %}
+                  {% if interview.outcome == 'pending' and interview.starts_at < now %}
+                    <form method="post" action="{{ url_for('reminders.interview_outcome', interview_id=interview.id) }}" class="outcome-form">
+                      {{ csrf() }}
+                      <span class="small muted">How did it go?</span>
+                      <button class="button button-quiet button-small" type="submit" name="outcome" value="passed">Passed</button>
+                      <button class="button button-quiet button-small" type="submit" name="outcome" value="failed">Not passed</button>
+                    </form>
+                  {% endif %}
+                </div>
+                <a class="icon-link" href="{{ url_for('reminders.edit_interview', interview_id=interview.id) }}" aria-label="Edit this interview">{{ pencil_icon() }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">No interviews yet. Add one when they call you, and it goes in your calendar feed.</p>
+        {% endif %}
+      </section>
+
       <section class="card" id="timeline">
         <div class="card-head"><h2>Timeline</h2></div>
         <form method="post" action="{{ url_for('applications.add_note', job_id=job.id) }}" class="note-form">
@@ -80,6 +123,42 @@
     </div>
 
     <aside class="job-side">
+      {% set open_follow_ups = job.follow_ups|rejectattr('done_at')|list %}
+      {% set done_follow_ups = job.follow_ups|selectattr('done_at')|list %}
+      {% set here = url_for('applications.detail', job_id=job.id) %}
+      <section class="card" id="follow-ups">
+        <div class="card-head"><h2>Follow-ups</h2></div>
+        {% if open_follow_ups %}
+          <ul class="reminder-list">
+            {% for item in open_follow_ups %}{{ follow_up_row(item, today, here, show_job=False, edit=True) }}{% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">Nothing to follow up right now.</p>
+        {% endif %}
+        <form method="post" action="{{ url_for('reminders.add_follow_up', job_id=job.id) }}" class="follow-up-form">
+          {{ csrf() }}
+          <label class="visually-hidden" for="follow-up-note">What to do</label>
+          <input id="follow-up-note" class="control" name="note" maxlength="300" required placeholder="Email the recruiter">
+          <label class="visually-hidden" for="follow-up-day">Day</label>
+          <input id="follow-up-day" class="control" type="date" name="due_on" required value="{{ (today + timedelta(days=3)).isoformat() }}">
+          <button class="button button-quiet" type="submit">Add</button>
+        </form>
+        {% if done_follow_ups %}
+          <details class="done-list">
+            <summary>Done ({{ done_follow_ups|length }})</summary>
+            <ul>
+              {% for item in done_follow_ups %}
+                <li>
+                  <span><span class="done-note">{{ item.note }}</span> <span class="muted small">{{ item.done_at|nice_date }}</span></span>
+                  <form method="post" action="{{ url_for('reminders.follow_up_not_done', follow_up_id=item.id) }}" class="inline-form">
+                    {{ csrf() }}<button class="link-button small" type="submit">Undo</button>
+                  </form>
+                </li>
+              {% endfor %}
+            </ul>
+          </details>
+        {% endif %}
+      </section>
       <section class="card">
         <h2>Details</h2>
         <dl class="details">

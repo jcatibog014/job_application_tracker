@@ -6,7 +6,7 @@ The demo sees every form, switched off; the server refuses its changes anyway.
 from flask import Blueprint, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
-from .. import auth, db
+from .. import auth, calendar_feed, db, reminders
 from ..auth import login_required
 from ..dates import is_timezone, timezone_names
 
@@ -54,6 +54,37 @@ def new_recovery_code(errors):
     return auth.show_recovery_code(code, "settings")
 
 
+def change_reminders(errors):
+    form = request.form
+    follow_up, no_reply = form.get("follow_up_days", ""), form.get("no_reply_days", "")
+    if not (follow_up.isdigit() and int(follow_up) in reminders.FOLLOW_UP_DAY_CHOICES):
+        errors["follow_up_days"] = "Choose one from the list."
+    if not (no_reply.isdigit() and int(no_reply) in reminders.NO_REPLY_DAY_CHOICES):
+        errors["no_reply_days"] = "Choose one from the list."
+    if errors:
+        return None
+    g.user.follow_up_days, g.user.no_reply_days = int(follow_up), int(no_reply)
+    g.user.thank_you_notes = form.get("thank_you_notes") == "1"
+    db.session().commit()
+    flash("Your reminder settings have been saved.")
+    return back()
+
+
+def calendar_on(errors):
+    """Make the feed's address, or a new one (the old one stops working)."""
+    g.user.calendar_token = calendar_feed.new_token()
+    db.session().commit()
+    flash("Your calendar link is ready. Copy it into your calendar app.")
+    return redirect(url_for("settings.index") + "#calendar")
+
+
+def calendar_off(errors):
+    g.user.calendar_token = None
+    db.session().commit()
+    flash("The calendar feed is off. The old link no longer works.")
+    return redirect(url_for("settings.index") + "#calendar")
+
+
 def delete_account(errors):
     if not check_password_hash(g.user.password_hash, request.form.get("password", "")):
         errors["delete_password"] = "That isn't your password."
@@ -68,6 +99,9 @@ def delete_account(errors):
 
 ACTIONS = {
     "timezone": change_timezone,
+    "reminders": change_reminders,
+    "calendar_on": calendar_on,
+    "calendar_off": calendar_off,
     "password": change_password,
     "recovery": new_recovery_code,
     "delete": delete_account,
@@ -87,4 +121,10 @@ def index():
         if response is not None:
             return response
     timezones = [(name, name.replace("_", " ")) for name in timezone_names()]
-    return render_template("settings.html", errors=errors, timezones=timezones), 400 if errors else 200
+    feed_url = (url_for("reminders.calendar", token=g.user.calendar_token, _external=True)
+                if g.user.calendar_token else None)
+    return render_template(
+        "settings.html", errors=errors, timezones=timezones, feed_url=feed_url,
+        follow_up_days=[(days, f"{days} days after applying" if days else "Off") for days in reminders.FOLLOW_UP_DAY_CHOICES],
+        no_reply_days=[(days, f"After {days} days" if days else "Never") for days in reminders.NO_REPLY_DAY_CHOICES],
+    ), 400 if errors else 200

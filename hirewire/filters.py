@@ -10,14 +10,16 @@ filtered view can be bookmarked, shared with yourself, or saved by name.
 Both are plain functions, so the tests check them without a browser.
 """
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from sqlalchemy import case, func, or_, select
 from werkzeug.datastructures import MultiDict
 
-from .dates import parse_day
-from .models import ACTIVE_STAGES, STAGE_LABELS, STAGES, SOURCES, WORK_MODES, Application, Company, Note, SavedView
+from .dates import parse_day, utcnow
+from .models import (
+    ACTIVE_STAGES, SOURCES, STAGE_LABELS, STAGES, WORK_MODES, Application, Company, FollowUp, Interview, Note, SavedView,
+)
 
 PER_PAGE = 25
 TEXT_LIMIT = 100
@@ -31,6 +33,7 @@ SORTS = {
     "updated": "Last change",
 }
 DEFAULT_SORT = ("updated", "desc")
+INTERVIEW_CHOICES = {"upcoming": "Interview coming", "week": "Interview this week"}
 
 
 @dataclass(frozen=True)
@@ -44,6 +47,8 @@ class Filters:
     applied_to: date | None = None
     pay_at_least: int | None = None
     closed: bool = False  # with no stage chosen, also show closed ones
+    interview: str = ""  # "upcoming" (any time ahead) or "week" (the next 7 days)
+    follow_up_due: bool = False  # an open follow-up due today or earlier
     sort: str = DEFAULT_SORT[0]
     order: str = DEFAULT_SORT[1]
     page: int = 1
@@ -83,6 +88,8 @@ def parse_filters(args):
         applied_to=applied_to,
         pay_at_least=_whole(args, "pay"),
         closed=args.get("closed") == "1",
+        interview=args.get("interview") if args.get("interview") in INTERVIEW_CHOICES else "",
+        follow_up_due=args.get("followup") == "due",
         sort=sort,
         order=order,
         page=_whole(args, "page", high=100_000) or 1,
@@ -112,6 +119,10 @@ def to_args(f, **changes):
         args["pay"] = str(f.pay_at_least)
     if f.closed and not f.stages:
         args["closed"] = "1"
+    if f.interview:
+        args["interview"] = f.interview
+    if f.follow_up_due:
+        args["followup"] = "due"
     if (f.sort, f.order) != DEFAULT_SORT:
         args["sort"], args["order"] = f.sort, f.order
     if f.page > 1:
@@ -156,6 +167,10 @@ def chips(f):
         found.append((f"Pay at least {f.pay_at_least:,}", to_args(f, pay_at_least=None, page=1)))
     if f.closed and not f.stages:
         found.append(("With closed", to_args(f, closed=False, page=1)))
+    if f.interview:
+        found.append((INTERVIEW_CHOICES[f.interview], to_args(f, interview="", page=1)))
+    if f.follow_up_due:
+        found.append(("Follow-up due", to_args(f, follow_up_due=False, page=1)))
     return found
 
 
@@ -164,8 +179,10 @@ def stage_order():
     return case({stage: index for index, stage in enumerate(STAGES)}, value=Application.stage)
 
 
-def apply_filters(query, f, today):
-    """Narrow and sort a SELECT of Application that already joins Company."""
+def apply_filters(query, f, today, moment=None):
+    """Narrow and sort a SELECT of Application that already joins Company.
+    today is the person's own day; moment is now in UTC (for interviews)."""
+    moment = moment or utcnow()
     if f.stages:
         query = query.where(Application.stage.in_(f.stages))
     elif not f.closed:
@@ -193,8 +210,16 @@ def apply_filters(query, f, today):
         # The top of the range counts; a job with only one number uses that one.
         top = func.coalesce(Application.salary_max, Application.salary_min)
         query = query.where(top >= f.pay_at_least)
-    for narrow in EXTRA_FILTERS:
-        query = narrow(query, f, today)
+    if f.interview:
+        until = moment + timedelta(days=7 if f.interview == "week" else 3650)
+        coming = select(Interview.id).where(Interview.application_id == Application.id,
+                                            Interview.outcome != "cancelled",
+                                            Interview.starts_at >= moment, Interview.starts_at <= until)
+        query = query.where(coming.exists())
+    if f.follow_up_due:
+        due = select(FollowUp.id).where(FollowUp.application_id == Application.id, FollowUp.done_at.is_(None),
+                                        FollowUp.due_on <= today)
+        query = query.where(due.exists())
     return query.order_by(*sort_columns(f))
 
 
@@ -212,15 +237,13 @@ def sort_columns(f):
     return [column.nulls_last(), Application.id.desc()]
 
 
-# Later stages add filters here: functions (query, f, today) -> query.
-EXTRA_FILTERS = []
-
 
 # ---------- Saved views ----------
 
 STARTER_VIEWS = [
     ("Active", {"stage": ["applied", "screening", "interview", "offer"]}),
-    ("Remote", {"mode": ["remote"]}),
+    ("Needs Follow-up", {"followup": "due"}),
+    ("Interviews This Week", {"interview": "week"}),
 ]
 VIEW_NAME_LIMIT = 60
 

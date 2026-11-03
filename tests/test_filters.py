@@ -153,7 +153,7 @@ def test_empty_results_say_why(me, jobs):
 def test_new_accounts_get_starter_views(app, client):
     post(client, "/signup", {"username": "carla", "password": "long enough", "confirm_password": "long enough"})
     page = client.get("/applications/").get_data(as_text=True)
-    assert ">Active</a>" in page and ">Remote</a>" in page
+    assert ">Active</a>" in page and ">Needs Follow-up</a>" in page and ">Interviews This Week</a>" in page
 
 
 def test_save_and_open_a_view(app, me, jobs):

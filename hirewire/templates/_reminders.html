@@ -1,0 +1,59 @@
+{# Rows for follow-ups and interviews, used on the Dashboard, the Schedule and an application's page. #}
+{% from "_macros.html" import csrf, pencil_icon %}
+
+{% macro due_words(day, today) -%}
+  {%- if day < today -%}Overdue · {{ day|short_day }}
+  {%- else -%}{{ day|relative_day }}{%- endif -%}
+{%- endmacro %}
+
+{% macro follow_up_row(item, today, next, show_job=True, edit=False, show_day=True, snooze_choices={1: '1 day', 3: '3 days', 7: '1 week'}) %}
+  <li class="reminder{% if item.due_on < today %} is-overdue{% endif %}">
+    <div class="reminder-text">
+      {% if show_job %}
+        <a class="reminder-job" href="{{ url_for('applications.detail', job_id=item.application.id) }}">{{ item.application.company.name }} · {{ item.application.role_title }}</a>
+      {% endif %}
+      <p class="reminder-note">{{ item.note }}</p>
+      {% if show_day or item.due_on < today %}<p class="reminder-when">{{ due_words(item.due_on, today) }}</p>{% endif %}
+    </div>
+    <div class="reminder-actions">
+      {% if edit %}<a class="icon-link" href="{{ url_for('reminders.edit_follow_up', follow_up_id=item.id) }}" aria-label="Edit this follow-up">{{ pencil_icon() }}</a>{% endif %}
+      <details class="snooze">
+        <summary class="button button-quiet button-small">Snooze</summary>
+        <form method="post" action="{{ url_for('reminders.snooze_follow_up', follow_up_id=item.id) }}" class="snooze-menu">
+          {{ csrf() }}<input type="hidden" name="next" value="{{ next }}">
+          {% for days, words in snooze_choices.items() %}
+            <button class="link-button" type="submit" name="days" value="{{ days }}">{{ words }}</button>
+          {% endfor %}
+        </form>
+      </details>
+      <form method="post" action="{{ url_for('reminders.follow_up_done', follow_up_id=item.id) }}" class="inline-form">
+        {{ csrf() }}<input type="hidden" name="next" value="{{ next }}">
+        <button class="button button-small" type="submit">Done</button>
+      </form>
+    </div>
+  </li>
+{% endmacro %}
+
+{% macro date_tile(day) %}
+  <span class="date-tile" aria-hidden="true"><span class="date-month">{{ day.strftime('%b') }}</span><span class="date-day">{{ day.day }}</span></span>
+{% endmacro %}
+
+{% macro interview_row(interview, show_job=True, show_day=True) %}
+  {% set day = interview.starts_at|local_day %}
+  <li class="interview-row">
+    {{ date_tile(day) }}
+    <div class="interview-text">
+      <p class="interview-when">{% if show_day %}{{ day|relative_day }} · {% endif %}{{ interview.starts_at|nice_time }} · {{ interview.kind_label }}</p>
+      {% if show_job %}
+        <a class="reminder-job" href="{{ url_for('applications.detail', job_id=interview.application.id) }}#interviews">{{ interview.application.company.name }} · {{ interview.application.role_title }}</a>
+      {% endif %}
+      {% if interview.with_whom or interview.place %}
+        <p class="muted small">
+          {%- if interview.with_whom %}With {{ interview.with_whom }}{% endif -%}
+          {%- if interview.with_whom and interview.place %} · {% endif -%}
+          {%- if interview.place_is_link %}<a href="{{ interview.place }}" target="_blank" rel="noopener noreferrer nofollow">Join link</a>{% elif interview.place %}{{ interview.place }}{% endif -%}
+        </p>
+      {% endif %}
+    </div>
+  </li>
+{% endmacro %}

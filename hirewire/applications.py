@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from . import companies, forms, workflow
-from .models import ACTIVE_STAGES, CURRENCIES, SOURCES, WORK_MODES
+from .models import ACTIVE_STAGES, CURRENCIES, OUTCOMES, SOURCES, WORK_MODES
 
 TEXT_FIELDS = (
     # name, limit, required
@@ -81,5 +81,14 @@ def timeline(job):
         if change.source in SOURCE_WORDS:
             title += f" ({SOURCE_WORDS[change.source]})"
         events.append(Event(change.changed_at, "stage", title, change.note, change))
+    for interview in job.interviews:
+        who = f" with {interview.with_whom}" if interview.with_whom else ""
+        title = f"{interview.kind_label}{who}"
+        if interview.outcome != "pending":
+            title += f" ({OUTCOMES[interview.outcome].lower()})"
+        events.append(Event(interview.starts_at, "interview", title, "", interview))
+    for follow_up in job.follow_ups:
+        if follow_up.done_at:
+            events.append(Event(follow_up.done_at, "follow_up", "Followed up", follow_up.note, follow_up))
     order = {"stage": 0, "note": 1}
     return sorted(events, key=lambda event: (event.moment, -order.get(event.kind, 2)), reverse=True)
