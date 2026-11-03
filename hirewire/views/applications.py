@@ -1,11 +1,18 @@
 """Applications: the list, adding and editing one, its page, and its notes."""
-from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
-from sqlalchemy.orm import selectinload, undefer
+from dataclasses import replace
+from urllib.parse import parse_qsl
 
-from .. import applications, auth, companies, db, forms, workflow
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
+from sqlalchemy import func, select
+from sqlalchemy.orm import contains_eager, selectinload, undefer
+from werkzeug.datastructures import MultiDict
+
+from .. import applications, auth, companies, db, filters, forms, workflow
 from ..auth import login_required
 from ..dates import local_today, utcnow
-from ..models import ACTIVE_STAGES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, WORK_MODES, Application, Note
+from ..models import (
+    ACTIVE_STAGES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, STAGES, WORK_MODES, Application, Note, SavedView,
+)
 from ..ownership import get_child, get_mine, mine
 
 bp = Blueprint("applications", __name__, url_prefix="/applications")
@@ -31,9 +38,51 @@ def form_page(template_values, errors, job=None):
 @login_required
 def index():
     s = db.session()
-    jobs = s.scalars(mine(Application).options(selectinload(Application.company))
-                     .order_by(Application.updated_at.desc())).all()
-    return render_template("applications/list.html", jobs=jobs)
+    f = filters.parse_filters(request.args)
+    query = filters.apply_filters(mine(Application).join(Application.company), f, local_today(g.user.timezone))
+    total = s.scalar(select(func.count()).select_from(query.order_by(None).subquery()))
+    pages = max(1, -(-total // filters.PER_PAGE))  # rounded up
+    if f.page > pages:
+        f = replace(f, page=pages)
+    jobs = s.scalars(query.options(contains_eager(Application.company))
+                     .limit(filters.PER_PAGE).offset((f.page - 1) * filters.PER_PAGE)).all()
+    views = s.scalars(mine(SavedView).order_by(SavedView.created_at, SavedView.id)).all()
+    return render_template(
+        "applications/list.html", jobs=jobs, f=f, total=total, pages=pages, views=views,
+        here=filters.view_query(request.args), chips=filters.chips(f), filtered=filters.is_filtered(f),
+        stage_choices=[(stage, STAGE_LABELS[stage]) for stage in STAGES],
+        sources=SOURCES, sorts=filters.SORTS, per_page=filters.PER_PAGE, to_args=filters.to_args, sort_link=filters.sort_link)
+
+
+@bp.post("/views")
+@login_required
+def save_view():
+    """Name the filters the page shows now. The same name again replaces the old view."""
+    s = db.session()
+    name, problem = forms.text(request.form, "name", filters.VIEW_NAME_LIMIT, required=True, label="A name")
+    query = filters.view_query(MultiDict(parse_qsl(request.form.get("query", ""))))
+    if problem:
+        flash(problem)
+        return redirect(url_for("applications.index") + ("?" + query if query else ""))
+    view = s.scalar(mine(SavedView).where(SavedView.name == name))
+    if view is None:
+        view = SavedView(user_id=g.user.id, name=name)
+        s.add(view)
+    view.query = query
+    s.commit()
+    flash(f'Saved the view "{name}".')
+    return redirect(url_for("applications.index") + ("?" + query if query else ""))
+
+
+@bp.post("/views/<int:view_id>/delete")
+@login_required
+def delete_view(view_id):
+    s = db.session()
+    view = get_mine(SavedView, view_id)
+    s.delete(view)
+    s.commit()
+    flash(f'Deleted the view "{view.name}".')
+    return redirect(url_for("applications.index"))
 
 
 @bp.route("/new", methods=["GET", "POST"])

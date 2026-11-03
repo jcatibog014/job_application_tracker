@@ -450,6 +450,60 @@ img { max-width: 100%; height: auto; display: block; }
 .drop-zone.can-drop { color: var(--accent-strong); background: var(--surface); }
 .can-drop.is-over { background: var(--accent-soft); border-style: solid; }
 
+/* ---------- Filters ---------- */
+
+.view-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1.25rem; margin: 0 0 1rem; border-bottom: 1px solid var(--rule); }
+.view-tabs a { display: inline-block; padding: .45rem 0; color: var(--ink-soft); text-decoration: none; }
+.view-tabs a:hover { color: var(--accent); }
+.view-tabs a[aria-current="page"] { color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+.view-tab { display: inline-flex; align-items: center; gap: .2rem; }
+.view-delete { width: 1.5rem; height: 1.5rem; padding: 0; background: none; border: 0; border-radius: 50%; color: var(--ink-soft); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.view-delete:hover { background: var(--danger-soft); color: var(--danger); }
+.filter-card { padding: 1rem 1.25rem; }
+.filter-row { display: flex; gap: .6rem; }
+.filter-row .control { flex: 1; min-width: 0; }
+.filter-more { margin-top: .75rem; }
+.filter-more summary { width: max-content; cursor: pointer; color: var(--accent); font-size: .92rem; font-weight: 600; }
+.filter-more[open] summary { margin-bottom: 1rem; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); gap: 1rem 1.25rem; margin-bottom: 1rem; }
+.filter-grid .span-all { grid-column: 1 / -1; }
+.filter-group { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: .5rem; }
+.filter-group legend { padding: 0; margin-bottom: .3rem; font-weight: 600; font-size: .92rem; }
+.filter-card .form-actions { padding-top: 1rem; border-top: 1px solid var(--rule); }
+.toggle-pills { display: flex; flex-wrap: wrap; gap: .4rem; }
+.toggle-pill { position: relative; cursor: pointer; }
+.toggle-pill input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.toggle-pill span { display: inline-flex; align-items: center; min-height: 2rem; padding: 0 .8rem; border: 1px solid var(--rule-strong); border-radius: 999px; background: var(--surface); font-size: .88rem; }
+.toggle-pill:hover span { border-color: var(--accent); color: var(--accent); }
+.toggle-pill input:checked + span { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-strong); font-weight: 600; }
+.toggle-pill input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .75rem 1.5rem; margin: 0 0 1rem; }
+.chips { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 0; padding: 0; }
+.chip { display: inline-flex; align-items: center; gap: .35rem; min-height: 1.9rem; padding: 0 .7rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent-strong); font-size: .86rem; font-weight: 600; text-decoration: none; }
+.chip:hover { background: var(--danger-soft); color: var(--danger); }
+.chip-clear { margin-left: .4rem; font-size: .86rem; }
+.save-view { display: flex; gap: .5rem; margin: 0; }
+.save-view .control { width: 12rem; }
+.result-count { margin: 0 0 .6rem; color: var(--ink-soft); font-size: .9rem; }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 1.25rem; margin-top: 1.5rem; }
+
+/* Narrow screens: each table row becomes a small card (company and stage on top, then the title). */
+.phone-only { display: none; }
+@container main (max-width: 40rem) {
+  .table thead { display: none; }
+  .table, .table tbody, .table td { display: block; }
+  .table tr { display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .75rem; padding: .8rem 1rem; border-bottom: 1px solid var(--rule); }
+  .table tbody tr:last-child { border-bottom: 0; }
+  .table td { padding: 0; border: 0; }
+  .table td:empty { display: none; }
+  .table .col-company { order: 1; flex: 1 1 0; color: var(--ink-soft); font-size: .85rem; }
+  .table .col-stage { order: 2; }
+  .table .col-title { order: 3; flex-basis: 100%; }
+  .table .col-meta { order: 4; color: var(--ink-soft); font-size: .85rem; text-align: left; }
+  .table .col-updated { display: none; }
+  .phone-only { display: inline; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

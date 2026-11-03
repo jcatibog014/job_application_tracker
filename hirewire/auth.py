@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from . import db
+from . import db, filters
 from .dates import utcnow
 from .models import User
 
@@ -102,6 +102,7 @@ def create_user(s, username, password, is_demo=False):
     code = set_recovery_code(user)
     s.add(user)
     s.flush()
+    filters.add_starter_views(s, user)  # every account starts with a few saved views
     return user, code
 
 

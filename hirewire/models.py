@@ -149,6 +149,18 @@ class Note(Base):
     application: Mapped[Application] = relationship(back_populates="notes")
 
 
+class SavedView(Base):
+    """A named set of filters for the Applications page (filters.py), like "Remote"."""
+    __tablename__ = "saved_views"
+    __table_args__ = (UniqueConstraint("user_id", "name"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    name: Mapped[str] = mapped_column(String(60))
+    query: Mapped[str] = mapped_column(String(1000), default="")  # "stage=applied&mode=remote"
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
 class StageChange(Base):
     """One move from a stage to another (workflow.move). The first row of an
     application has no from_stage. The timeline and the stats come from these."""

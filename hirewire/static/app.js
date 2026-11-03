@@ -80,6 +80,16 @@ function setUpCopy() {
   });
 }
 
+// Ticking a stage or choosing a source shows the result straight away.
+// Typed fields still wait for the Search or Apply button.
+function setUpFilters() {
+  const form = document.querySelector("[data-filters]");
+  if (!form) return;
+  form.addEventListener("change", (event) => {
+    if (event.target.matches("input[type=checkbox], select")) form.requestSubmit();
+  });
+}
+
 // ---------- The Board ----------
 
 // The server decides (workflow.py): a drop is only offered where the card may
@@ -177,4 +187,5 @@ setUpMenu();
 setUpUserMenu();
 setUpConfirm();
 setUpCopy();
+setUpFilters();
 setUpBoard();

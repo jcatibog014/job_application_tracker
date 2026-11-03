@@ -56,7 +56,7 @@
       <ol class="board-cards" data-closed-list>{% for job in closed %}{{ card(job) }}{% endfor %}</ol>
       <p class="board-empty">No closed applications</p>
       {% if closed_total > closed|length %}
-        <a class="board-more" href="{{ url_for('applications.index') }}">See all {{ closed_total }} closed</a>
+        <a class="board-more" href="{{ url_for('applications.index', stage=closed_stages|list) }}">See all {{ closed_total }} closed</a>
       {% endif %}
     </section>
   </div>

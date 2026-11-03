@@ -2,7 +2,7 @@
 
 Moments are shown in the logged-in person's time zone.
 """
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 from flask import g
 
@@ -47,7 +47,7 @@ def local_day(moment):
 
 def relative_day(day):
     """Today, Tomorrow, Yesterday, In 3 days, 5 days ago, or a date further away."""
-    if not isinstance(day, date):
+    if isinstance(day, datetime):  # a moment: which day it was for this person
         day = local_day(day)
     days = (day - local_today(person_timezone())).days
     if days == 0:
