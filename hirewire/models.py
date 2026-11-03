@@ -1,7 +1,7 @@
 """The data model.
 
-    users ─┬─< companies ──< applications ──< notes
-           └─< applications
+    users ─┬─< companies ──< applications ─┬─< notes
+           └─< applications                └─< stage_changes
 
 Every row belongs to one user, and every query starts from that user
 (ownership.py), so nobody can see anyone else's job hunt. Deleting a user
@@ -124,6 +124,9 @@ class Application(Base):
     company: Mapped[Company] = relationship(back_populates="applications")
     notes: Mapped[list["Note"]] = relationship(back_populates="application", cascade="all, delete-orphan",
                                                passive_deletes=True, order_by="Note.created_at.desc()")
+    stage_changes: Mapped[list["StageChange"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="StageChange.changed_at")
 
     @property
     def stage_label(self):
@@ -144,3 +147,24 @@ class Note(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     application: Mapped[Application] = relationship(back_populates="notes")
+
+
+class StageChange(Base):
+    """One move from a stage to another (workflow.move). The first row of an
+    application has no from_stage. The timeline and the stats come from these."""
+    __tablename__ = "stage_changes"
+    __table_args__ = (
+        CheckConstraint(f"to_stage IN ({sql_list(STAGES)})", name="to_stage_known"),
+        CheckConstraint(f"from_stage IS NULL OR from_stage IN ({sql_list(STAGES)})", name="from_stage_known"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), index=True)
+    from_stage: Mapped[str | None] = mapped_column(String(12))
+    to_stage: Mapped[str] = mapped_column(String(12))
+    changed_at: Mapped[datetime] = mapped_column(default=utcnow)
+    note: Mapped[str] = mapped_column(String(500), default="")
+    # manual (a button), board (a drag), email (an accepted email suggestion)
+    source: Mapped[str] = mapped_column(String(10), default="manual")
+
+    application: Mapped[Application] = relationship(back_populates="stage_changes")

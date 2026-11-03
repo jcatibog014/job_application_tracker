@@ -1,8 +1,8 @@
 """Applications: the list, adding and editing one, its page, and its notes."""
-from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from flask import Blueprint, flash, g, jsonify, redirect, render_template, request, url_for
 from sqlalchemy.orm import selectinload, undefer
 
-from .. import applications, companies, db, forms
+from .. import applications, auth, companies, db, forms, workflow
 from ..auth import login_required
 from ..dates import local_today, utcnow
 from ..models import ACTIVE_STAGES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, WORK_MODES, Application, Note
@@ -12,7 +12,8 @@ bp = Blueprint("applications", __name__, url_prefix="/applications")
 
 
 def get_job(job_id):
-    return get_mine(Application, job_id, selectinload(Application.company), undefer(Application.job_description))
+    return get_mine(Application, job_id, selectinload(Application.company), selectinload(Application.notes),
+                    selectinload(Application.stage_changes), undefer(Application.job_description))
 
 
 def form_page(template_values, errors, job=None):
@@ -47,11 +48,12 @@ def new():
         return form_page(request.form, errors)
     s = db.session()
     moment = utcnow()
-    job = Application(user_id=g.user.id, stage=values["stage"], stage_changed_at=moment, created_at=moment)
+    job = Application(user_id=g.user.id, created_at=moment)
     if values["stage"] != SAVED and not values["applied_on"]:
         values["applied_on"] = local_today(g.user.timezone, moment)
     applications.apply_form(s, job, values, g.user.id, moment)
     s.add(job)
+    workflow.start(s, job, values["stage"], moment)
     s.commit()
     flash("The application has been added.")
     return redirect(url_for("applications.detail", job_id=job.id))
@@ -61,7 +63,37 @@ def new():
 @login_required
 def detail(job_id):
     job = get_job(job_id)
-    return render_template("applications/detail.html", job=job, timeline=applications.timeline(job))
+    forward, endings, back = workflow.group_moves(job.stage, workflow.came_from(db.session(), job))
+    return render_template("applications/detail.html", job=job, timeline=applications.timeline(job),
+                           forward=forward, endings=endings, back=back)
+
+
+def wants_json():
+    return request.accept_mimetypes.best == "application/json"
+
+
+@bp.post("/<int:job_id>/move")
+@login_required
+def move(job_id):
+    """A stage button on the application's page, or a drag on the Board (which wants JSON back)."""
+    job = get_job(job_id)
+    s = db.session()
+    source = "board" if request.form.get("from") == "board" else "manual"
+    note, _ = forms.text(request.form, "note", 500)
+    try:
+        workflow.move(s, job, request.form.get("to", ""), g.user, utcnow(), note=note, source=source)
+    except workflow.MoveNotAllowed as problem:
+        s.rollback()
+        if wants_json():
+            return jsonify(error=str(problem)), 409
+        flash(str(problem))
+    else:
+        s.commit()
+        if wants_json():
+            return jsonify(stage=job.stage, label=job.stage_label,
+                           moves=workflow.allowed_moves(job.stage, workflow.came_from(s, job)))
+        flash(f"Moved to {job.stage_label}.")
+    return redirect(auth.safe_next(request.form.get("next"), url_for("applications.detail", job_id=job.id)))
 
 
 @bp.route("/<int:job_id>/edit", methods=["GET", "POST"])

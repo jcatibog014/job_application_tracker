@@ -65,13 +65,13 @@ def create_app(test_config=None):
 
     from . import auth, db, formatting
     from .models import STAGE_LABELS, WORK_MODES
-    from .views import applications, companies, dashboard, settings
+    from .views import applications, board, companies, dashboard, settings
 
     db.init_app(app)
     auth.init_app(app)
     formatting.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
-    for blueprint in (auth.bp, dashboard.bp, applications.bp, companies.bp, settings.bp):
+    for blueprint in (auth.bp, dashboard.bp, applications.bp, board.bp, companies.bp, settings.bp):
         app.register_blueprint(blueprint)
 
     app.jinja_env.globals.update(APP_NAME="Hire Wire", STAGE_LABELS=STAGE_LABELS, WORK_MODES=WORK_MODES)

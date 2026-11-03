@@ -21,7 +21,33 @@
 
   <div class="job-layout">
     <div class="job-main">
-      {% block main_cards %}{% endblock %}
+      <section class="card stage-card">
+        <div class="card-head">
+          <h2>Stage</h2>
+          <p class="muted small">{{ job.stage_label }} since {{ job.stage_changed_at|nice_date }}</p>
+        </div>
+        {% if forward or endings or back %}
+          <form method="post" action="{{ url_for('applications.move', job_id=job.id) }}" class="move-form">
+            {{ csrf() }}
+            <label class="visually-hidden" for="move-note">Note for this move</label>
+            <input id="move-note" class="control" name="note" maxlength="500" placeholder="Add a note to this move (optional)">
+            {% for label, stages, verb in [('Move to', forward, ''), ('Close as', endings, ''), ('Fix a mistake', back, 'Back to ')] %}
+              {% if stages %}
+                <div class="move-group">
+                  <span class="move-label">{{ label }}</span>
+                  <div class="move-buttons">
+                    {% for stage in stages %}
+                      <button class="button button-quiet button-small" type="submit" name="to" value="{{ stage }}">{{ verb }}{{ STAGE_LABELS[stage] }}</button>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            {% endfor %}
+          </form>
+        {% else %}
+          <p class="card-note">This application is closed. Rejected and Withdrawn can only go back to where they came from.</p>
+        {% endif %}
+      </section>
       <section class="card" id="timeline">
         <div class="card-head"><h2>Timeline</h2></div>
         <form method="post" action="{{ url_for('applications.add_note', job_id=job.id) }}" class="note-form">

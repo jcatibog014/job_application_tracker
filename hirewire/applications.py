@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from . import companies, forms
+from . import companies, forms, workflow
 from .models import ACTIVE_STAGES, CURRENCIES, SOURCES, WORK_MODES
 
 TEXT_FIELDS = (
@@ -69,8 +69,17 @@ class Event:
     item: object = None  # the row it came from, for buttons like Delete
 
 
+SOURCE_WORDS = {"board": "on the Board", "email": "from an email"}
+
+
 def timeline(job):
-    """Everything that happened to an application, newest first."""
+    """Everything that happened to an application, newest first. At the same
+    moment, a stage change comes before the notes made with it."""
     events = [Event(note.created_at, "note", "Note", note.body, note) for note in job.notes]
-    events.append(Event(job.created_at, "created", "Added to Hire Wire"))
-    return sorted(events, key=lambda event: event.moment, reverse=True)
+    for change in job.stage_changes:
+        title = workflow.describe(change)
+        if change.source in SOURCE_WORDS:
+            title += f" ({SOURCE_WORDS[change.source]})"
+        events.append(Event(change.changed_at, "stage", title, change.note, change))
+    order = {"stage": 0, "note": 1}
+    return sorted(events, key=lambda event: (event.moment, -order.get(event.kind, 2)), reverse=True)

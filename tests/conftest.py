@@ -90,18 +90,25 @@ def get_user(app, username):
 
 
 def add_job(app, user_id, company="Acme", role="Data Analyst", stage="applied", **fields):
-    """Put an application straight into the database. Returns its id."""
-    from hirewire import companies
+    """Put an application straight into the database, with its history. A closed
+    stage is reached through Applied (or Offer, for Accepted and Declined).
+    Returns its id."""
+    from hirewire import companies, workflow
     from hirewire.dates import utcnow
-    from hirewire.models import Application
+    from hirewire.models import ACTIVE_STAGES, Application
 
     with app.app_context():
         s = db.session()
         moment = fields.pop("moment", utcnow())
-        job = Application(user_id=user_id, role_title=role, stage=stage, stage_changed_at=moment,
-                          created_at=moment, updated_at=moment, **fields)
+        job = Application(user_id=user_id, role_title=role, created_at=moment, updated_at=moment, **fields)
         job.company = companies.find_or_add(s, user_id, company)
         s.add(job)
+        if stage in ACTIVE_STAGES:
+            workflow.start(s, job, stage, moment)
+        else:
+            workflow.start(s, job, "offer" if stage in ("accepted", "declined") else "applied", moment)
+            s.flush()
+            workflow.move(s, job, stage, s.get(User, user_id), moment)
         s.commit()
         return job.id
 
