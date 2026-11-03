@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% set title = 'Edit Application' if job else 'Add Application' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% if job %}
+    <a class="back-link" href="{{ url_for('applications.detail', job_id=job.id) }}">&larr; {{ job.role_title }}</a>
+  {% else %}
+    <a class="back-link" href="{{ url_for('applications.index') }}">&larr; Applications</a>
+  {% endif %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    {% block head_actions %}{% endblock %}
+  </div>
+  {% if errors %}<p class="form-error" role="alert">Please check the fields marked below.</p>{% endif %}
+  <form method="post" class="card form-card"
+        action="{{ url_for('applications.edit', job_id=job.id) if job else url_for('applications.new') }}">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('company_name', 'Company', values.company_name, errors.company_name,
+               attrs='required maxlength="120" list="company-names" autocomplete="off"' ~ ('' if job else ' autofocus')) }}
+      <datalist id="company-names">{% for name in company_names %}<option value="{{ name }}"></option>{% endfor %}</datalist>
+      {{ field('role_title', 'Job title', values.role_title, errors.role_title, attrs='required maxlength="150"') }}
+      {% if not job %}
+        {{ select('stage', 'Stage now', stages, values.stage, errors.stage, hint='Saved means not applied yet') }}
+      {% endif %}
+      {{ field('applied_on', 'Applied on', values.applied_on, errors.applied_on, type='date',
+               hint='Today if left empty' if not job else None) }}
+      {{ field('location', 'Location', values.location, errors.location, attrs='maxlength="120" placeholder="Makati City"') }}
+      {{ select('work_mode', 'Work mode', work_modes, values.work_mode, errors.work_mode) }}
+      <div class="pay-row span-2">
+        {{ field('salary_min', 'Lowest monthly pay', values.salary_min, errors.salary_min, attrs='inputmode="numeric" placeholder="40,000"') }}
+        {{ field('salary_max', 'Highest monthly pay', values.salary_max, errors.salary_max, attrs='inputmode="numeric" placeholder="55,000"') }}
+        {{ select('currency', 'Currency', currencies, values.currency or 'PHP', errors.currency) }}
+      </div>
+      {{ select('source', 'Found it on', sources, values.source, errors.source) }}
+      {{ field('posting_url', 'Job posting link', values.posting_url, errors.posting_url, type='url',
+               attrs='maxlength="500" placeholder="https://"') }}
+      <div class="span-2">
+        {{ textarea('job_description', 'Job description', values.job_description, errors.job_description, rows=8,
+                    hint='Paste it here: postings often disappear once the job is filled.') }}
+      </div>
+      {% block extra_fields %}{% endblock %}
+    </div>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('applications.detail', job_id=job.id) if job else url_for('applications.index') }}">Cancel</a>
+      <button class="button" type="submit">{{ 'Save changes' if job else 'Add application' }}</button>
+    </div>
+  </form>
+{% endblock %}

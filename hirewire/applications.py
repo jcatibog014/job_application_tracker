@@ -1,0 +1,76 @@
+"""Applications: reading the form, saving it, and the timeline on its page."""
+from dataclasses import dataclass
+from datetime import datetime
+
+from . import companies, forms
+from .models import ACTIVE_STAGES, CURRENCIES, SOURCES, WORK_MODES
+
+TEXT_FIELDS = (
+    # name, limit, required
+    ("role_title", 150, True),
+    ("location", 120, False),
+    ("job_description", 20_000, False),
+)
+
+
+def read_form(form, is_new):
+    """The application form -> (values, errors). A new one also has its first stage."""
+    values, errors = {}, {}
+
+    def keep(name, result):
+        values[name], problem = result
+        if problem:
+            errors[name] = problem
+
+    keep("company_name", forms.text(form, "company_name", 120, required=True, label="A company"))
+    for name, limit, required in TEXT_FIELDS:
+        keep(name, forms.text(form, name, limit, required, label="A job title"))
+    keep("posting_url", forms.web_link(form, "posting_url"))
+    keep("work_mode", forms.choice(form, "work_mode", ("", *WORK_MODES)))
+    keep("source", forms.choice(form, "source", ("", *SOURCES)))
+    keep("currency", forms.choice(form, "currency", CURRENCIES, default="PHP"))
+    keep("salary_min", forms.whole_number(form, "salary_min"))
+    keep("salary_max", forms.whole_number(form, "salary_max"))
+    keep("applied_on", forms.day(form, "applied_on"))
+    if values["salary_min"] and values["salary_max"] and values["salary_min"] > values["salary_max"]:
+        errors["salary_max"] = "The highest pay can't be less than the lowest."
+    if is_new:
+        keep("stage", forms.choice(form, "stage", ACTIVE_STAGES, default="applied"))
+    return values, errors
+
+
+def apply_form(s, job, values, user_id, moment):
+    """Copy the form's values onto the application (not the stage: workflow.py does that)."""
+    job.company = companies.find_or_add(s, user_id, values["company_name"])
+    for name, value in values.items():
+        if name not in ("company_name", "stage"):
+            setattr(job, name, value)
+    job.updated_at = moment
+
+
+def form_values(job):
+    """What the edit form starts with."""
+    return {
+        "company_name": job.company.name, "role_title": job.role_title, "location": job.location,
+        "job_description": job.job_description, "posting_url": job.posting_url, "work_mode": job.work_mode,
+        "source": job.source, "currency": job.currency, "salary_min": job.salary_min,
+        "salary_max": job.salary_max, "applied_on": job.applied_on.isoformat() if job.applied_on else "",
+    }
+
+
+# ---------- The timeline ----------
+
+@dataclass
+class Event:
+    moment: datetime
+    kind: str  # "note", "stage"... (the template draws each kind)
+    title: str
+    body: str = ""
+    item: object = None  # the row it came from, for buttons like Delete
+
+
+def timeline(job):
+    """Everything that happened to an application, newest first."""
+    events = [Event(note.created_at, "note", "Note", note.body, note) for note in job.notes]
+    events.append(Event(job.created_at, "created", "Added to Hire Wire"))
+    return sorted(events, key=lambda event: event.moment, reverse=True)

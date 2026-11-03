@@ -54,6 +54,12 @@
   <a class="wordmark" href="{{ href }}">{{ mark() }}<span>Hire Wire</span></a>
 {% endmacro %}
 
+{# A stage's coloured pill. The name is always written, so colour is never the only sign. #}
+{% macro stage_pill(stage) %}<span class="stage stage-{{ stage }}">{{ STAGE_LABELS[stage] }}</span>{% endmacro %}
+
+{# An outside link: opens in a new tab, and the other site can't reach back into this one. #}
+{% macro outside_link(href, text) %}<a href="{{ href }}" target="_blank" rel="noopener noreferrer nofollow">{{ text }}</a>{% endmacro %}
+
 {# A row of the empty kind: a title and one sentence, never a stand-in picture. #}
 {% macro empty(title, text, button_href=None, button_text=None) %}
   <div class="empty-state">

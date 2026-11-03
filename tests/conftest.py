@@ -89,6 +89,33 @@ def get_user(app, username):
         return db.session().scalar(select(User).where(User.username == username))
 
 
+def add_job(app, user_id, company="Acme", role="Data Analyst", stage="applied", **fields):
+    """Put an application straight into the database. Returns its id."""
+    from hirewire import companies
+    from hirewire.dates import utcnow
+    from hirewire.models import Application
+
+    with app.app_context():
+        s = db.session()
+        moment = fields.pop("moment", utcnow())
+        job = Application(user_id=user_id, role_title=role, stage=stage, stage_changed_at=moment,
+                          created_at=moment, updated_at=moment, **fields)
+        job.company = companies.find_or_add(s, user_id, company)
+        s.add(job)
+        s.commit()
+        return job.id
+
+
+def get_job(app, job_id):
+    from sqlalchemy.orm import selectinload, undefer
+
+    from hirewire.models import Application
+
+    with app.app_context():
+        return db.session().scalar(select(Application).where(Application.id == job_id).options(
+            selectinload(Application.company), selectinload(Application.notes), undefer(Application.job_description)))
+
+
 @pytest.fixture
 def user_id(app):
     return make_user(app, "ana")

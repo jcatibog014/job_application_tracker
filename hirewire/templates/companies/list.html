@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}Companies - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Companies</h1>
+    <div class="actions">
+      <form class="search-form" method="get" role="search">
+        <label class="visually-hidden" for="company-search">Search companies</label>
+        <input id="company-search" class="control" type="search" name="q" value="{{ words }}" placeholder="Search companies" maxlength="100">
+        <button class="button button-quiet" type="submit">Search</button>
+      </form>
+      <a class="button" href="{{ url_for('companies.new') }}">Add company</a>
+    </div>
+  </div>
+  {% if rows %}
+    <ul class="company-grid">
+      {% for company, count in rows %}
+        <li class="card company-card">
+          <h2><a class="row-link" href="{{ url_for('companies.detail', company_id=company.id) }}">{{ company.name }}</a></h2>
+          <p class="muted small">{{ [company.industry, company.location]|select|join(' · ') or 'No details yet' }}</p>
+          <p class="company-count">{{ count }} {{ 'application' if count == 1 else 'applications' }}</p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif words %}
+    {{ empty('No Matching Companies', 'No company name has "' ~ words ~ '" in it.') }}
+  {% else %}
+    {{ empty('No Companies Yet', 'Companies are added for you when you add an application. You can add one here too.',
+             url_for('companies.new'), 'Add company') }}
+  {% endif %}
+{% endblock %}

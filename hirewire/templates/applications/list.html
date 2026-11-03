@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty, stage_pill %}
+{% block title %}Applications - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Applications</h1>
+    <div class="actions">
+      <a class="button" href="{{ url_for('applications.new') }}">Add application</a>
+    </div>
+  </div>
+  {% if jobs %}
+    <div class="card table-card">
+      <div class="table-scroll">
+        <table class="table">
+          <thead>
+            <tr><th>Company</th><th>Job title</th><th>Stage</th><th>Applied</th><th>Location</th></tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+              <tr>
+                <td>{{ job.company.name }}</td>
+                <td><a class="row-link" href="{{ url_for('applications.detail', job_id=job.id) }}">{{ job.role_title }}</a></td>
+                <td>{{ stage_pill(job.stage) }}</td>
+                <td>{{ job.applied_on|short_day if job.applied_on else '' }}</td>
+                <td>{{ job.location }}{% if job.work_mode %}{{ ' · ' if job.location }}{{ WORK_MODES[job.work_mode] }}{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    {{ empty('No Applications Yet', 'Add the jobs you applied for, or saved to apply for later.', url_for('applications.new'), 'Add application') }}
+  {% endif %}
+{% endblock %}

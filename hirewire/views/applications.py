@@ -1,0 +1,118 @@
+"""Applications: the list, adding and editing one, its page, and its notes."""
+from flask import Blueprint, flash, g, redirect, render_template, request, url_for
+from sqlalchemy.orm import selectinload, undefer
+
+from .. import applications, companies, db, forms
+from ..auth import login_required
+from ..dates import local_today, utcnow
+from ..models import ACTIVE_STAGES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, WORK_MODES, Application, Note
+from ..ownership import get_child, get_mine, mine
+
+bp = Blueprint("applications", __name__, url_prefix="/applications")
+
+
+def get_job(job_id):
+    return get_mine(Application, job_id, selectinload(Application.company), undefer(Application.job_description))
+
+
+def form_page(template_values, errors, job=None):
+    return render_template(
+        "applications/form.html", values=template_values, errors=errors, job=job,
+        company_names=companies.names(db.session(), g.user.id),
+        stages=[(stage, STAGE_LABELS[stage]) for stage in ACTIVE_STAGES],
+        work_modes=[("", "Not sure")] + list(WORK_MODES.items()),
+        sources=[("", "Not sure")] + [(source, source) for source in SOURCES],
+        currencies=[(currency, currency) for currency in CURRENCIES],
+    ), 400 if errors else 200
+
+
+@bp.get("/")
+@login_required
+def index():
+    s = db.session()
+    jobs = s.scalars(mine(Application).options(selectinload(Application.company))
+                     .order_by(Application.updated_at.desc())).all()
+    return render_template("applications/list.html", jobs=jobs)
+
+
+@bp.route("/new", methods=["GET", "POST"])
+@login_required
+def new():
+    if request.method == "GET":
+        # Quick add and the company page fill some fields in through the address.
+        start = {name: request.args.get(name, "") for name in ("company_name", "role_title")}
+        return form_page({"stage": "applied", "currency": "PHP", **start}, {})
+    values, errors = applications.read_form(request.form, is_new=True)
+    if errors:
+        return form_page(request.form, errors)
+    s = db.session()
+    moment = utcnow()
+    job = Application(user_id=g.user.id, stage=values["stage"], stage_changed_at=moment, created_at=moment)
+    if values["stage"] != SAVED and not values["applied_on"]:
+        values["applied_on"] = local_today(g.user.timezone, moment)
+    applications.apply_form(s, job, values, g.user.id, moment)
+    s.add(job)
+    s.commit()
+    flash("The application has been added.")
+    return redirect(url_for("applications.detail", job_id=job.id))
+
+
+@bp.get("/<int:job_id>")
+@login_required
+def detail(job_id):
+    job = get_job(job_id)
+    return render_template("applications/detail.html", job=job, timeline=applications.timeline(job))
+
+
+@bp.route("/<int:job_id>/edit", methods=["GET", "POST"])
+@login_required
+def edit(job_id):
+    job = get_job(job_id)
+    if request.method == "GET":
+        return form_page(applications.form_values(job), {}, job)
+    values, errors = applications.read_form(request.form, is_new=False)
+    if errors:
+        return form_page(request.form, errors, job)
+    applications.apply_form(db.session(), job, values, g.user.id, utcnow())
+    db.session().commit()
+    flash("Your changes have been saved.")
+    return redirect(url_for("applications.detail", job_id=job.id))
+
+
+@bp.post("/<int:job_id>/delete")
+@login_required
+def delete(job_id):
+    s = db.session()
+    s.delete(get_job(job_id))
+    s.commit()
+    flash("The application has been deleted.")
+    return redirect(url_for("applications.index"))
+
+
+# ---------- Notes ----------
+
+@bp.post("/<int:job_id>/notes")
+@login_required
+def add_note(job_id):
+    job = get_job(job_id)
+    body, problem = forms.text(request.form, "body", 5000, required=True, label="A note")
+    if problem:
+        flash(problem)
+    else:
+        moment = utcnow()
+        db.session().add(Note(application=job, body=body, created_at=moment))
+        job.updated_at = moment
+        db.session().commit()
+    return redirect(url_for("applications.detail", job_id=job.id) + "#timeline")
+
+
+@bp.post("/notes/<int:note_id>/delete")
+@login_required
+def delete_note(note_id):
+    note = get_child(Note, note_id)
+    job_id = note.application_id
+    s = db.session()
+    s.delete(note)
+    s.commit()
+    flash("The note has been deleted.")
+    return redirect(url_for("applications.detail", job_id=job_id) + "#timeline")

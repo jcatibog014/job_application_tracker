@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, textarea %}
+{% set title = 'Edit Company' if company else 'Add Company' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% if company %}
+    <a class="back-link" href="{{ url_for('companies.detail', company_id=company.id) }}">&larr; {{ company.name }}</a>
+  {% else %}
+    <a class="back-link" href="{{ url_for('companies.index') }}">&larr; Companies</a>
+  {% endif %}
+  <div class="page-head"><h1>{{ title }}</h1></div>
+  <form method="post" class="card form-card">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ field('name', 'Name', values.name, errors.name, attrs='required maxlength="120"' ~ ('' if company else ' autofocus')) }}
+      {{ field('website', 'Website', values.website, errors.website, type='url', attrs='maxlength="500" placeholder="https://"') }}
+      {{ field('industry', 'Industry', values.industry, errors.industry, attrs='maxlength="80" placeholder="Banking"') }}
+      {{ field('location', 'Location', values.location, errors.location, attrs='maxlength="120" placeholder="Taguig City"') }}
+      <div class="span-2">
+        {{ textarea('notes', 'Notes', values.notes, errors.notes, rows=5, hint='What they do, what you like about them, what people say') }}
+      </div>
+    </div>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('companies.detail', company_id=company.id) if company else url_for('companies.index') }}">Cancel</a>
+      <button class="button" type="submit">{{ 'Save changes' if company else 'Add company' }}</button>
+    </div>
+  </form>
+{% endblock %}

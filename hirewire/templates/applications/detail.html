@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, outside_link, pencil_icon, stage_pill %}
+{% block title %}{{ job.role_title }} at {{ job.company.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('applications.index') }}">&larr; Applications</a>
+  <div class="job-head">
+    <div class="job-title">
+      <p class="kicker"><a href="{{ url_for('companies.detail', company_id=job.company.id) }}">{{ job.company.name }}</a></p>
+      <h1>{{ job.role_title }}</h1>
+      <p class="job-meta">
+        {{ stage_pill(job.stage) }}
+        {% if job.location %}<span>{{ job.location }}</span>{% endif %}
+        {% if job.work_mode %}<span>{{ WORK_MODES[job.work_mode] }}</span>{% endif %}
+        {% if job.applied_on %}<span>Applied {{ job.applied_on|nice_day }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="actions">
+      <a class="button button-quiet" href="{{ url_for('applications.edit', job_id=job.id) }}">{{ pencil_icon() }} Edit</a>
+    </div>
+  </div>
+
+  <div class="job-layout">
+    <div class="job-main">
+      {% block main_cards %}{% endblock %}
+      <section class="card" id="timeline">
+        <div class="card-head"><h2>Timeline</h2></div>
+        <form method="post" action="{{ url_for('applications.add_note', job_id=job.id) }}" class="note-form">
+          {{ csrf() }}
+          <label class="visually-hidden" for="note-body">Add a note</label>
+          <textarea id="note-body" class="control" name="body" rows="2" maxlength="5000" required
+                    placeholder="Add a note: what you talked about, what to prepare..."></textarea>
+          <div class="form-actions"><button class="button" type="submit">Add note</button></div>
+        </form>
+        <ol class="timeline">
+          {% for event in timeline %}
+            <li class="timeline-item timeline-{{ event.kind }}">
+              <div class="timeline-when">{{ event.moment|nice_datetime }}</div>
+              <div class="timeline-what">
+                {% if event.kind == 'note' %}
+                  <p class="timeline-body">{{ event.body }}</p>
+                  <form method="post" action="{{ url_for('applications.delete_note', note_id=event.item.id) }}"
+                        class="inline-form" data-confirm="Delete this note?">
+                    {{ csrf() }}<button class="link-button small" type="submit">Delete note</button>
+                  </form>
+                {% else %}
+                  <p class="timeline-title">{{ event.title }}</p>
+                  {% if event.body %}<p class="timeline-body muted">{{ event.body }}</p>{% endif %}
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+    </div>
+
+    <aside class="job-side">
+      <section class="card">
+        <h2>Details</h2>
+        <dl class="details">
+          <dt>Company</dt><dd><a href="{{ url_for('companies.detail', company_id=job.company.id) }}">{{ job.company.name }}</a></dd>
+          <dt>Pay</dt><dd>{{ job.salary_min|salary_range(job.salary_max, job.currency) or 'Not known' }}</dd>
+          <dt>Found it on</dt><dd>{{ job.source or 'Not known' }}</dd>
+          <dt>Posting</dt><dd>{% if job.posting_url %}{{ outside_link(job.posting_url, 'Open the job posting') }}{% else %}No link{% endif %}</dd>
+          {% block more_details %}{% endblock %}
+        </dl>
+      </section>
+      {% block side_cards %}{% endblock %}
+      <section class="card">
+        <h2>Job Description</h2>
+        {% if job.job_description %}
+          <details class="description">
+            <summary>Show the saved description</summary>
+            <div class="description-text">{{ job.job_description }}</div>
+          </details>
+        {% else %}
+          <p class="card-note">No description saved. <a href="{{ url_for('applications.edit', job_id=job.id) }}">Paste one in</a>, because postings disappear.</p>
+        {% endif %}
+      </section>
+    </aside>
+  </div>
+
+  <div class="danger-row">
+    <form method="post" action="{{ url_for('applications.delete', job_id=job.id) }}"
+          data-confirm="Delete this application, with its notes and history?">
+      {{ csrf() }}<button class="button button-danger" type="submit">Delete application</button>
+    </form>
+  </div>
+{% endblock %}
