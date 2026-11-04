@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Error {{ code }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="empty-state">
+    <p class="kicker">Error {{ code }}</p>
+    <h1>{{ message }}</h1>
+    <p><a href="{{ url_for('home') }}">Go to the start page</a></p>
+  </div>
+{% endblock %}

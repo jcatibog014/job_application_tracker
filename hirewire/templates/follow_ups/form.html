@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Edit Follow-up - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% set job = follow_up.application %}
+  <a class="back-link" href="{{ url_for('applications.detail', job_id=job.id) }}#follow-ups">&larr; {{ job.role_title }} at {{ job.company.name }}</a>
+  <div class="page-head"><h1>Edit Follow-up</h1></div>
+  <form method="post" class="card form-card narrow-form">
+    {{ csrf() }}
+    <div class="stack">
+      {{ field('due_on', 'Day', values.due_on, errors.due_on, type='date', attrs='required') }}
+      {{ field('note', 'What to do', values.note, errors.note, attrs='required maxlength="300"') }}
+    </div>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('applications.detail', job_id=job.id) }}#follow-ups">Cancel</a>
+      <button class="button" type="submit">Save changes</button>
+    </div>
+  </form>
+  <div class="danger-row">
+    <form method="post" action="{{ url_for('reminders.delete_follow_up', follow_up_id=follow_up.id) }}" data-confirm="Delete this follow-up?">
+      {{ csrf() }}<button class="button button-danger" type="submit">Delete follow-up</button>
+    </form>
+  </div>
+{% endblock %}

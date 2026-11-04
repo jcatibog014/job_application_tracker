@@ -1,0 +1,11 @@
+{% from "_macros.html" import wordmark %}
+{# The panel beside the login and sign-up cards. #}
+<section class="welcome-panel">
+  {{ wordmark(url_for('auth.login')) }}
+  <p class="welcome-line">Every application, interview and follow-up in one calm place.</p>
+  <ul class="welcome-points">
+    <li>See each application move from Applied to Offer.</li>
+    <li>Get reminded when it's time to follow up.</li>
+    <li>Put your interviews in your phone's calendar.</li>
+  </ul>
+</section>

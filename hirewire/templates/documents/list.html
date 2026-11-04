@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty, pencil_icon %}
+{% block title %}Documents - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Documents</h1>
+    <div class="actions"><a class="button" href="{{ url_for('documents.new') }}">Add file</a></div>
+    <p class="page-sub">Your résumé and cover letter versions. Choose which one went with each application on its Edit page.</p>
+  </div>
+  {% for label, files in groups %}
+    <section class="card table-card document-group">
+      <h2 class="table-title">{{ label }}{{ 's' if label != 'Other' }}</h2>
+      <div class="table-scroll">
+        <table class="table as-cards">
+          <thead><tr><th>Name</th><th>Version</th><th>File</th><th>Added</th><th class="num">Used in</th><th><span class="visually-hidden">Edit</span></th></tr></thead>
+          <tbody>
+            {% for doc in files %}
+              <tr>
+                <td class="col-title"><a class="doc-link" href="{{ url_for('documents.download', document_id=doc.id) }}">{{ doc.name }}</a></td>
+                <td class="col-meta">{{ doc.version_label }}</td>
+                <td class="col-meta muted">{{ doc.filename.rsplit('.', 1)[1]|upper }} · {{ size_words(doc.size) }}</td>
+                <td class="col-meta muted">{{ doc.created_at|nice_date }}</td>
+                <td class="col-meta num">{% set count = used.get(doc.id, 0) %}{{ count }} {{ 'application' if count == 1 else 'applications' }}</td>
+                <td class="col-stage"><a class="icon-link" href="{{ url_for('documents.edit', document_id=doc.id) }}" aria-label="Edit {{ doc.name }}">{{ pencil_icon() }}</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% else %}
+    {{ empty('No Documents Yet', 'Add your résumé and cover letters (PDF or Word), so you know which version went where.',
+             url_for('documents.new'), 'Add file') }}
+  {% endfor %}
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, stage_pill %}
+{% block title %}Email Suggestions - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Email Suggestions</h1>
+    <div class="actions">
+      {% if account or g.user.is_demo %}
+        <form method="post" action="{{ url_for('inbox.check_now') }}" class="inline-form">
+          {{ csrf() }}<button class="button button-quiet" type="submit">Check email now</button>
+        </form>
+      {% endif %}
+    </div>
+    <p class="page-sub">
+      {% if g.user.is_demo %}The demo reads a set of sample emails, never a real inbox.
+      {% elif account %}From {{ account.address }}{% if account.last_checked_at %}, last checked {{ account.last_checked_at|nice_datetime }}{% endif %}. Nothing changes until you accept.
+      {% else %}Connect Gmail and Hire Wire suggests updates from your job emails.{% endif %}
+    </p>
+  </div>
+  {% if problem %}<p class="flash flash-error" role="alert">{{ problem }}</p>{% endif %}
+
+  <nav class="view-tabs" aria-label="Suggestions">
+    <a href="{{ url_for('inbox.index') }}"{% if not showing_done %} aria-current="page"{% endif %}>Waiting</a>
+    <a href="{{ url_for('inbox.index', show='done') }}"{% if showing_done %} aria-current="page"{% endif %}>Accepted and Ignored</a>
+  </nav>
+
+  {% if not account and not g.user.is_demo %}
+    <div class="card connect-card">
+      <h2>Connect Your Gmail</h2>
+      <p>Hire Wire looks for emails like "Thank you for applying", "Interview invitation" or "Unfortunately..." and turns them into suggestions you can accept with one press. It only reads, and keeps a short snippet of each.</p>
+      <a class="button" href="{{ url_for('settings.index') }}#gmail">Connect Gmail in Settings</a>
+    </div>
+  {% endif %}
+
+  {% if rows %}
+    <ul class="suggestion-list">
+      {% for item in rows %}
+        <li class="card suggestion">
+          <div class="suggestion-head">
+            <span class="email-kind email-kind-{{ item.kind }}">{{ item.kind_label }}</span>
+            <span class="muted small">{{ item.sender }} · {{ item.received_at|relative_day }}</span>
+          </div>
+          <h2 class="suggestion-subject">{{ item.subject or '(no subject)' }}</h2>
+          {% if item.snippet %}<p class="suggestion-snippet">{{ item.snippet }}</p>{% endif %}
+
+          {% if item.status == 'pending' %}
+            <p class="suggestion-change"><strong>Suggested:</strong> {{ describe(item) }}</p>
+            <form method="post" action="{{ url_for('inbox.accept', suggestion_id=item.id) }}" class="suggestion-form">
+              {{ csrf() }}
+              <label class="field">
+                <span class="field-label">Application</span>
+                <select name="application">
+                  {% if item.kind in ('applied', 'interview') %}
+                    <option value="new"{% if not item.application_id %} selected{% endif %}>New application{% if item.company_guess %} for {{ item.company_guess }}{% endif %}</option>
+                  {% elif not item.application_id %}
+                    <option value="" selected>Choose one</option>
+                  {% endif %}
+                  {% for job in jobs %}
+                    <option value="{{ job.id }}"{% if job.id == item.application_id %} selected{% endif %}>{{ job.company.name }} · {{ job.role_title }} ({{ job.stage_label }})</option>
+                  {% endfor %}
+                </select>
+              </label>
+              {% if item.kind in ('applied', 'interview') %}
+                <label class="field">
+                  <span class="field-label">Job title <span class="hint">for a new one</span></span>
+                  <input type="text" name="role" value="{{ item.role_guess }}" maxlength="150" placeholder="Data Analyst">
+                </label>
+              {% endif %}
+              {% if item.kind == 'interview' %}
+                <label class="field">
+                  <span class="field-label">Interview time <span class="hint">{{ 'Read from the email' if item.proposed_at else 'Not in the email' }}</span></span>
+                  <input type="datetime-local" name="when" value="{{ item.proposed_at|input_datetime if item.proposed_at }}">
+                </label>
+              {% endif %}
+              <div class="form-actions suggestion-actions">
+                <button class="button button-quiet" type="submit" formaction="{{ url_for('inbox.ignore', suggestion_id=item.id) }}" formnovalidate>Ignore</button>
+                <button class="button" type="submit">Accept</button>
+              </div>
+            </form>
+          {% else %}
+            <p class="suggestion-change">
+              {% if item.status == 'accepted' %}
+                Accepted{% if item.application %}: <a href="{{ url_for('applications.detail', job_id=item.application.id) }}">{{ item.application.company.name }} · {{ item.application.role_title }}</a> {{ stage_pill(item.application.stage) }}{% endif %}
+              {% else %}
+                Ignored.
+                <form method="post" action="{{ url_for('inbox.undo_ignore', suggestion_id=item.id) }}" class="inline-form">
+                  {{ csrf() }}<button class="link-button" type="submit">Bring it back</button>
+                </form>
+              {% endif %}
+            </p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif showing_done %}
+    {{ empty('Nothing Here Yet', 'Suggestions you accept or ignore show here.') }}
+  {% elif account or g.user.is_demo %}
+    {{ empty('No Suggestions Waiting', 'New job emails will show here. They are checked when you open this page, at most once an hour.') }}
+  {% endif %}
+{% endblock %}

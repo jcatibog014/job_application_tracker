@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field %}
+{% block title %}Sign Up - {{ APP_NAME }}{% endblock %}
+{% block body_class %}welcome-layout{% endblock %}
+{% block header %}{% endblock %}
+{% block content %}
+  <div class="welcome">
+    {% include "_welcome.html" %}
+    <section class="welcome-cards">
+      <div class="card">
+        <h1>Sign Up</h1>
+        <p class="card-note">Your tracker is private: only you can see it.</p>
+        <form method="post" action="{{ url_for('auth.signup') }}" class="stack">
+          {{ csrf() }}
+          {# Robots fill in every field; people never see this one. #}
+          <label class="hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+          {{ field('username', 'Username', username, errors.username, hint='Letters, numbers, - and _',
+                   attrs='autocomplete="username" required autofocus maxlength="40"') }}
+          {{ field('password', 'Password', '', errors.password, type='password', hint='At least 8 characters',
+                   attrs='autocomplete="new-password" required') }}
+          {{ field('confirm_password', 'Password again', type='password', attrs='autocomplete="new-password" required') }}
+          <button class="button" type="submit">Sign up</button>
+        </form>
+        <p class="card-note">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+      </div>
+    </section>
+  </div>
+{% endblock %}

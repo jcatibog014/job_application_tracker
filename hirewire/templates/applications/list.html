@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, stage_pill %}
+{% block title %}Applications - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% set panel_count = chips|length - (1 if f.q else 0) %}
+  <div class="page-head">
+    <h1>Applications</h1>
+    <div class="actions">
+      <a class="button button-quiet" href="{{ url_for('applications.quick_add_page') }}">Quick add from link</a>
+      <a class="button" href="{{ url_for('applications.new') }}">Add application</a>
+    </div>
+  </div>
+
+  {# Saved views: named sets of filters. The first one is "no filters". #}
+  <nav class="view-tabs" aria-label="Saved views">
+    <a href="{{ url_for('applications.index') }}"{% if not here %} aria-current="page"{% endif %}>All Active</a>
+    {% for view in views %}
+      <span class="view-tab">
+        <a href="{{ url_for('applications.index') }}{{ '?' ~ view.query if view.query }}"{% if view.query == here %} aria-current="page"{% endif %}>{{ view.name }}</a>
+        {% if view.query == here %}
+          <form method="post" action="{{ url_for('applications.delete_view', view_id=view.id) }}" class="inline-form"
+                data-confirm="Delete the view &quot;{{ view.name }}&quot;? The applications stay.">
+            {{ csrf() }}<button class="view-delete" type="submit" aria-label="Delete the view {{ view.name }}">&times;</button>
+          </form>
+        {% endif %}
+      </span>
+    {% endfor %}
+  </nav>
+
+  <form class="card filter-card" method="get" action="{{ url_for('applications.index') }}" data-filters>
+    <div class="filter-row">
+      <label class="visually-hidden" for="filter-q">Search</label>
+      <input id="filter-q" class="control" type="search" name="q" value="{{ f.q }}" maxlength="100"
+             placeholder="Search job titles, companies, notes and descriptions">
+      {% if f.sort != 'updated' or f.order != 'desc' %}
+        <input type="hidden" name="sort" value="{{ f.sort }}"><input type="hidden" name="order" value="{{ f.order }}">
+      {% endif %}
+      <button class="button" type="submit">Search</button>
+    </div>
+    <details class="filter-more"{% if panel_count %} open{% endif %}>
+      <summary>More filters{% if panel_count %} ({{ panel_count }}){% endif %}</summary>
+      <div class="filter-grid">
+        <fieldset class="filter-group span-all">
+          <legend>Stage</legend>
+          <div class="toggle-pills">
+            {% for value, label in stage_choices %}
+              <label class="toggle-pill"><input type="checkbox" name="stage" value="{{ value }}"{% if value in f.stages %} checked{% endif %}><span>{{ label }}</span></label>
+            {% endfor %}
+          </div>
+          <div class="check-row">
+            <label class="check"><input type="checkbox" name="closed" value="1"{% if f.closed %} checked{% endif %}> Also show closed ones when no stage is chosen</label>
+            <label class="check"><input type="checkbox" name="followup" value="due"{% if f.follow_up_due %} checked{% endif %}> Only ones with a follow-up due</label>
+          </div>
+        </fieldset>
+        <fieldset class="filter-group span-all">
+          <legend>Work mode</legend>
+          <div class="toggle-pills">
+            {% for value, label in WORK_MODES.items() %}
+              <label class="toggle-pill"><input type="checkbox" name="mode" value="{{ value }}"{% if value in f.modes %} checked{% endif %}><span>{{ label }}</span></label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        <label class="field">
+          <span class="field-label">Found it on</span>
+          <select name="source">
+            <option value="">Anywhere</option>
+            {% for source in sources %}<option value="{{ source }}"{% if source in f.sources %} selected{% endif %}>{{ source }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Location</span>
+          <input type="text" name="location" value="{{ f.location }}" maxlength="100" placeholder="Makati">
+        </label>
+        <label class="field">
+          <span class="field-label">Applied from</span>
+          <input type="date" name="from" value="{{ f.applied_from.isoformat() if f.applied_from }}">
+        </label>
+        <label class="field">
+          <span class="field-label">Applied until</span>
+          <input type="date" name="to" value="{{ f.applied_to.isoformat() if f.applied_to }}">
+        </label>
+        <label class="field">
+          <span class="field-label">Interviews</span>
+          <select name="interview">
+            <option value="">Any</option>
+            {% for value, label in interview_choices.items() %}<option value="{{ value }}"{% if f.interview == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Pay at least</span>
+          <input type="text" name="pay" value="{{ '{:,}'.format(f.pay_at_least) if f.pay_at_least }}" inputmode="numeric" placeholder="40,000">
+        </label>
+      </div>
+      <div class="form-actions">
+        <a class="button button-quiet" href="{{ url_for('applications.index') }}">Clear all</a>
+        <button class="button" type="submit">Apply filters</button>
+      </div>
+    </details>
+  </form>
+
+  {% if chips %}
+    <div class="chip-row">
+      <ul class="chips" aria-label="Filters in use">
+        {% for text, args in chips %}
+          <li><a class="chip" href="{{ url_for('applications.index', **args) }}" aria-label="Remove the filter {{ text }}">{{ text }} <span aria-hidden="true">&times;</span></a></li>
+        {% endfor %}
+        <li><a class="chip-clear" href="{{ url_for('applications.index') }}">Clear all</a></li>
+      </ul>
+      <form class="save-view" method="post" action="{{ url_for('applications.save_view') }}">
+        {{ csrf() }}
+        <input type="hidden" name="query" value="{{ here }}">
+        <label class="visually-hidden" for="view-name">Name for this view</label>
+        <input id="view-name" class="control" name="name" maxlength="60" required placeholder="Name this view">
+        <button class="button button-quiet" type="submit">Save view</button>
+      </form>
+    </div>
+  {% endif %}
+
+  {% if jobs %}
+    <p class="result-count">
+      {% if pages > 1 %}Showing {{ (f.page - 1) * per_page + 1 }}–{{ (f.page - 1) * per_page + jobs|length }} of {{ total }}{% else %}{{ total }} {{ 'application' if total == 1 else 'applications' }}{% endif %}
+    </p>
+    <div class="card table-card">
+      <div class="table-scroll">
+        <table class="table as-cards">
+          <thead>
+            <tr>
+              {% for column, label in sorts.items() %}
+                {% set current = f.sort == column %}
+                <th{% if column == 'pay' %} class="num"{% endif %}{% if current %} aria-sort="{{ 'ascending' if f.order == 'asc' else 'descending' }}"{% endif %}>
+                  <a href="{{ url_for('applications.index', **sort_link(f, column)) }}">{{ label }}{% if current %} <span aria-hidden="true">{{ '↑' if f.order == 'asc' else '↓' }}</span>{% endif %}</a>
+                </th>
+                {% if column == 'pay' %}<th>Where</th>{% endif %}
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+              <tr>
+                <td class="col-company">{{ job.company.name }}</td>
+                <td class="col-title"><a class="row-link" href="{{ url_for('applications.detail', job_id=job.id) }}">{{ job.role_title }}</a></td>
+                <td class="col-stage">{{ stage_pill(job.stage) }}</td>
+                <td class="col-meta">{% if job.applied_on %}<span class="phone-only">Applied </span>{{ job.applied_on|short_day }}{% endif %}</td>
+                <td class="col-meta num">{{ job.salary_min|salary_range(job.salary_max, job.currency) }}</td>
+                <td class="col-meta">{{ job.location }}{% if job.work_mode %}{{ ' · ' if job.location }}{{ WORK_MODES[job.work_mode] }}{% endif %}</td>
+                <td class="col-updated muted">{{ job.updated_at|relative_day }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% if pages > 1 %}
+      <nav class="pagination" aria-label="Pages">
+        {% if f.page > 1 %}<a class="button button-quiet" href="{{ url_for('applications.index', **to_args(f, page=f.page - 1)) }}">Previous</a>{% endif %}
+        <span class="muted">Page {{ f.page }} of {{ pages }}</span>
+        {% if f.page < pages %}<a class="button button-quiet" href="{{ url_for('applications.index', **to_args(f, page=f.page + 1)) }}">Next</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% elif filtered %}
+    {{ empty('No Matching Applications', 'Nothing matches these filters. Remove one, or clear them all.',
+             url_for('applications.index'), 'Clear all') }}
+  {% else %}
+    {{ empty('No Applications Yet', 'Add the jobs you applied for, or saved to apply for later.', url_for('applications.new'), 'Add application') }}
+  {% endif %}
+{% endblock %}

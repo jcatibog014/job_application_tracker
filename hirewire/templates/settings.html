@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select %}
+{% block title %}Settings - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {# The demo sees these as examples, switched off. The server refuses its changes anyway. #}
+  {% set locked = 'disabled' if g.user.is_demo else '' %}
+  <div class="settings">
+    <div class="page-head"><h1>Settings</h1></div>
+
+    {# The theme lives in the browser, so this needs JavaScript. app.js shows it. #}
+    <section class="setting" data-theme-settings hidden>
+      <div class="setting-text">
+        <h2>Appearance</h2>
+        <p>Device follows your phone or computer. This choice is saved on this device only.</p>
+      </div>
+      <fieldset class="theme-choice">
+        <legend class="visually-hidden">Theme</legend>
+        <label><input type="radio" name="theme" value="system"><span>Device</span></label>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+      </fieldset>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Time Zone</h2>
+        <p>Interview times, reminders and "today" follow this place.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="timezone">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ select('timezone', 'Time zone', timezones, g.user.timezone, errors.timezone) }}
+          <div class="form-actions"><button class="button" type="submit">Save time zone</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting" id="reminders">
+      <div class="setting-text">
+        <h2>Reminders</h2>
+        <p>Hire Wire adds these follow-ups for you. They go away by themselves when they stop making sense.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="reminders">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ select('follow_up_days', 'Follow up on an application', follow_up_days, g.user.follow_up_days, errors.follow_up_days) }}
+          {{ select('no_reply_days', 'Ask "Mark as No reply?"', no_reply_days, g.user.no_reply_days, errors.no_reply_days,
+                    hint='When Applied or Screening has had no news') }}
+          <label class="check"><input type="checkbox" name="thank_you_notes" value="1"{% if g.user.thank_you_notes %} checked{% endif %}>
+            Remind me to send a thank-you note the day after an interview</label>
+          <div class="form-actions"><button class="button" type="submit">Save reminders</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting" id="calendar">
+      <div class="setting-text">
+        <h2>Calendar Feed</h2>
+        <p>Put your interviews and follow-ups in Google Calendar, Apple Calendar or Outlook, so your phone reminds you.</p>
+        <p>Calendar apps check the link every few hours (Google: about every 12 to 24 hours).</p>
+      </div>
+      <div class="stack">
+        {% if feed_url %}
+          <label class="field">
+            <span class="field-label">Your private calendar link <span class="hint">Anyone with it can see your schedule</span></span>
+            <input class="copy-line" type="text" value="{{ feed_url }}" readonly data-copy-text>
+          </label>
+          <ol class="steps">
+            <li>On a computer, open Google Calendar.</li>
+            <li>Next to <strong>Other calendars</strong>, press <strong>+</strong>, then <strong>From URL</strong>.</li>
+            <li>Paste the link and press <strong>Add calendar</strong>. It shows on your phone too.</li>
+          </ol>
+          <div class="form-actions setting-account-actions">
+            <button class="button" type="button" data-copy-button hidden>Copy link</button>
+            <form method="post" data-confirm="Make a new link? The old one stops working, so calendars using it stop updating.">
+              {{ csrf() }}<input type="hidden" name="action" value="calendar_on">
+              <button class="button button-quiet" type="submit" {{ locked }}>Make a new link</button>
+            </form>
+            <form method="post">
+              {{ csrf() }}<input type="hidden" name="action" value="calendar_off">
+              <button class="button button-quiet" type="submit" {{ locked }}>Turn off</button>
+            </form>
+          </div>
+        {% else %}
+          <form method="post" class="form-actions setting-account-actions">
+            {{ csrf() }}<input type="hidden" name="action" value="calendar_on">
+            <button class="button" type="submit" {{ locked }}>Make calendar link</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="setting" id="gmail">
+      <div class="setting-text">
+        <h2>Gmail</h2>
+        <p>Hire Wire reads your recent job emails and suggests updates, like "Interview with Acme on Nov 12". Nothing changes until you accept.</p>
+        <p>It only reads. Emails stay unread, and only a short snippet of each is kept.</p>
+      </div>
+      <div class="stack">
+        {% if gmail_account %}
+          <p class="status-line"><span>Connected as <strong>{{ gmail_account.address }}</strong></span>
+            <span class="muted small">{% if gmail_account.last_checked_at %}Last checked {{ gmail_account.last_checked_at|nice_datetime }}{% else %}Not checked yet{% endif %}</span></p>
+          {% if gmail_account.last_error %}<p class="form-error">{{ gmail_account.last_error }}</p>{% endif %}
+          <div class="form-actions setting-account-actions">
+            <a class="button" href="{{ url_for('inbox.index') }}">See suggestions</a>
+            <form method="post" data-confirm="Disconnect Gmail? Its app password will be deleted.">
+              {{ csrf() }}<input type="hidden" name="action" value="gmail_disconnect">
+              <button class="button button-quiet" type="submit" {{ locked }}>Disconnect</button>
+            </form>
+          </div>
+        {% else %}
+          <ol class="steps">
+            <li>Turn on <strong>2-Step Verification</strong> in your Google account.</li>
+            <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">App passwords</a>, type "Hire Wire" and press <strong>Create</strong>.</li>
+            <li>Copy the 16 letters here. You can delete that app password in Google at any time.</li>
+          </ol>
+          <form method="post">
+            {{ csrf() }}
+            <input type="hidden" name="action" value="gmail_connect">
+            <fieldset class="stack plain-fieldset" {{ locked }}>
+              {{ field('address', 'Gmail address', request.form.address if request.form.action == 'gmail_connect' else '', errors.address,
+                       type='email', attrs='autocomplete="email" maxlength="200" placeholder="name@gmail.com"') }}
+              {{ field('app_password', 'App password', '', errors.app_password, type='password',
+                       hint='Not your Google password', attrs='autocomplete="off" placeholder="abcd efgh ijkl mnop"') }}
+              <div class="form-actions"><button class="button" type="submit">Connect Gmail</button></div>
+            </fieldset>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Password</h2>
+        <p>Changing your password logs you out on your other devices.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="password">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('current_password', 'Current password', '', errors.current_password, type='password', attrs='autocomplete="current-password" required') }}
+          {{ field('new_password', 'New password', '', errors.new_password, type='password', hint='At least 8 characters', attrs='autocomplete="new-password" required') }}
+          {{ field('confirm_password', 'New password again', type='password', attrs='autocomplete="new-password" required') }}
+          <div class="form-actions"><button class="button" type="submit">Change password</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Recovery Code</h2>
+        <p>Lost the code you saved at sign-up? Make a new one. The old one stops working.</p>
+      </div>
+      <form method="post">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="recovery">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('password', 'Your password', '', errors.recovery_password, type='password', attrs='autocomplete="current-password" required') }}
+          <div class="form-actions"><button class="button" type="submit">Make new code</button></div>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Your Account</h2>
+        {% if g.user.is_demo %}
+          <p>You are using the demo, so the settings above are only examples.</p>
+        {% else %}
+          <p>You are logged in as {{ g.user.username }}.</p>
+        {% endif %}
+      </div>
+      <div class="form-actions setting-account-actions">
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ csrf() }}
+          <button class="button button-quiet" type="submit">Log out</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="setting">
+      <div class="setting-text">
+        <h2>Delete Account</h2>
+        <p>Deletes your account and every application, contact and file in it. This can't be undone.</p>
+      </div>
+      <form method="post" data-confirm="Delete your account and everything in it?">
+        {{ csrf() }}
+        <input type="hidden" name="action" value="delete">
+        <fieldset class="stack plain-fieldset" {{ locked }}>
+          {{ field('password', 'Your password', '', errors.delete_password, type='password', attrs='autocomplete="current-password" required') }}
+          <div class="form-actions"><button class="button button-danger" type="submit">Delete account</button></div>
+        </fieldset>
+      </form>
+    </section>
+  </div>
+{% endblock %}

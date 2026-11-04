@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf %}
+{% block title %}Quick Add - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('applications.index') }}">&larr; Applications</a>
+  <div class="page-head">
+    <h1>Quick Add from a Link</h1>
+    <p class="page-sub">Paste a job posting's address. Hire Wire reads the page and fills in the form for you to check.</p>
+  </div>
+  <form method="post" class="card form-card narrow-form">
+    {{ csrf() }}
+    <label class="field{% if error %} has-error{% endif %}">
+      <span class="field-label">Job posting link</span>
+      <input type="url" name="url" value="{{ url }}" required autofocus maxlength="500" placeholder="https://"
+             {% if error %}aria-invalid="true" aria-describedby="url-error"{% endif %}>
+      {% if error %}<p class="field-error" id="url-error">{{ error }}</p>{% endif %}
+    </label>
+    <p class="card-note">Works on most job sites and company career pages. LinkedIn often hides postings from apps, so for LinkedIn you may need to fill in the form yourself.</p>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('applications.new') }}">Fill in by hand</a>
+      <button class="button" type="submit">Read the posting</button>
+    </div>
+  </form>
+{% endblock %}

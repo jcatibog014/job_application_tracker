@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, stage_pill %}
+{% block title %}Board - {{ APP_NAME }}{% endblock %}
+
+{% macro card(job) %}
+  <li class="board-card" draggable="true" data-job-id="{{ job.id }}" data-moves="{{ moves[job.id]|join(' ') }}"
+      data-move-url="{{ url_for('applications.move', job_id=job.id) }}">
+    <p class="board-card-company">{{ job.company.name }}</p>
+    <a class="board-card-title" href="{{ url_for('applications.detail', job_id=job.id) }}" draggable="false">{{ job.role_title }}</a>
+    <p class="board-card-meta">
+      <span class="board-card-stage">{% if job.is_closed %}{{ stage_pill(job.stage) }}{% endif %}</span>
+      {% if job.applied_on %}<span>Applied {{ job.applied_on|short_day }}</span>{% endif %}
+      {% if job.work_mode %}<span>{{ WORK_MODES[job.work_mode] }}</span>{% endif %}
+    </p>
+    {# Works without dragging: by keyboard, on phones, and with JavaScript off. #}
+    <details class="card-move">
+      <summary>Move</summary>
+      <form method="post" action="{{ url_for('applications.move', job_id=job.id) }}">
+        {{ csrf() }}
+        <input type="hidden" name="from" value="board">
+        <input type="hidden" name="next" value="{{ url_for('board.index') }}">
+        <label class="visually-hidden" for="move-{{ job.id }}">Move {{ job.role_title }} to</label>
+        <select id="move-{{ job.id }}" class="control" name="to">
+          {% for stage in moves[job.id] %}<option value="{{ stage }}">{{ labels[stage] }}</option>{% endfor %}
+        </select>
+        <button class="button button-small" type="submit">Move</button>
+      </form>
+    </details>
+  </li>
+{% endmacro %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>Board</h1>
+    <div class="actions"><a class="button" href="{{ url_for('applications.new') }}">Add application</a></div>
+    <p class="page-sub">Drag a card to another column to move it, or use its Move menu.</p>
+  </div>
+  <p class="board-status" data-board-status role="status" aria-live="polite"></p>
+  <div class="board" data-board data-csrf="{{ csrf_token() }}" data-labels="{{ labels|tojson|forceescape }}"
+       data-closed="{{ closed_stages|join(' ') }}">
+    {% for stage, jobs in columns %}
+      <section class="board-column" data-drop="{{ stage }}" aria-labelledby="column-{{ stage }}">
+        <h2 class="board-head" id="column-{{ stage }}">{{ stage_pill(stage) }} <span class="board-count" data-count>{{ jobs|length }}</span></h2>
+        <ol class="board-cards">{% for job in jobs %}{{ card(job) }}{% endfor %}</ol>
+        <p class="board-empty">No applications</p>
+      </section>
+    {% endfor %}
+    <section class="board-column board-closed" aria-labelledby="column-closed">
+      <h2 class="board-head" id="column-closed">Closed <span class="board-count" data-count>{{ closed_total }}</span></h2>
+      {# Only while dragging: where in Closed the card should go. #}
+      <div class="drop-zones">
+        {% for stage in closed_stages %}
+          <div class="drop-zone" data-drop="{{ stage }}">{{ labels[stage] }}</div>
+        {% endfor %}
+      </div>
+      <ol class="board-cards" data-closed-list>{% for job in closed %}{{ card(job) }}{% endfor %}</ol>
+      <p class="board-empty">No closed applications</p>
+      {% if closed_total > closed|length %}
+        <a class="board-more" href="{{ url_for('applications.index', stage=closed_stages|list) }}">See all {{ closed_total }} closed</a>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

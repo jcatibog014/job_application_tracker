@@ -1,0 +1,55 @@
+{% from "_macros.html" import csrf, wordmark %}
+{# The menu only moves between pages. Preferences and Log out are in Settings
+   (and Log out in the account menu at the bottom). #}
+{% set section = request.blueprint %}
+{# Interview and follow-up forms belong to an application, so Applications is lit for them. #}
+{% set on_schedule = request.endpoint == 'reminders.schedule' %}
+{% macro link(endpoint, label, active, count=0) %}
+  <li>
+    <a href="{{ url_for(endpoint) }}"{% if active %} aria-current="page"{% endif %}>
+      <span>{{ label }}</span>{% if count %}<span class="badge">{{ count }}<span class="visually-hidden"> waiting</span></span>{% endif %}
+    </a>
+  </li>
+{% endmacro %}
+<aside class="sidebar">
+  <div class="sidebar-top">
+    {{ wordmark(url_for('dashboard.index')) }}
+    <button class="menu-button" type="button" data-menu-button aria-expanded="false" aria-controls="app-nav" hidden>
+      <span aria-hidden="true">&#9776;</span> Menu
+    </button>
+  </div>
+  <div class="sidebar-menu" id="app-nav">
+    <nav aria-label="Main">
+      <ul class="nav-links">
+        {{ link('dashboard.index', 'Dashboard', section == 'dashboard') }}
+        {{ link('applications.index', 'Applications', section == 'applications' or section == 'reminders' and not on_schedule) }}
+        {{ link('board.index', 'Board', section == 'board') }}
+        {{ link('reminders.schedule', 'Schedule', on_schedule, attention_count) }}
+        {{ link('inbox.index', 'Email Suggestions', section == 'inbox', suggestion_count) }}
+        {{ link('companies.index', 'Companies', section == 'companies') }}
+        {{ link('contacts.index', 'Contacts', section == 'contacts') }}
+        {{ link('documents.index', 'Documents', section == 'documents') }}
+        {{ link('stats.index', 'Stats', section == 'stats') }}
+      </ul>
+      <ul class="nav-links nav-links-end">
+        {{ link('settings.index', 'Settings', section == 'settings') }}
+      </ul>
+    </nav>
+    <div class="sidebar-foot">
+      {# <details> opens and closes without JavaScript. app.js also closes it on an outside click. #}
+      <details class="user-menu" data-user-menu>
+        <summary>
+          <span class="avatar" aria-hidden="true">{{ g.user.username[:1]|upper }}</span>
+          <span class="user-menu-name"><span class="visually-hidden">Account menu for </span>{{ 'Demo' if g.user.is_demo else g.user.username }}</span>
+        </summary>
+        <div class="user-menu-items">
+          <a href="{{ url_for('settings.index') }}">Settings</a>
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            {{ csrf() }}
+            <button class="link-button" type="submit">Log out</button>
+          </form>
+        </div>
+      </details>
+    </div>
+  </div>
+</aside>

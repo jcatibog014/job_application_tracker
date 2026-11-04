@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, outside_link, pencil_icon, stage_pill %}
+{% block title %}{{ company.name }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('companies.index') }}">&larr; Companies</a>
+  <div class="page-head">
+    <h1>{{ company.name }}</h1>
+    <div class="actions">
+      <a class="button button-quiet" href="{{ url_for('companies.edit', company_id=company.id) }}">{{ pencil_icon() }} Edit</a>
+      <a class="button" href="{{ url_for('applications.new', company_name=company.name) }}">Add application</a>
+    </div>
+  </div>
+
+  <div class="job-layout">
+    <div class="job-main">
+      <section class="card">
+        <div class="card-head"><h2>Applications</h2></div>
+        {% if jobs %}
+          <ul class="row-list">
+            {% for job in jobs %}
+              <li>
+                <a class="row-link" href="{{ url_for('applications.detail', job_id=job.id) }}">{{ job.role_title }}</a>
+                <span class="row-list-meta">{{ stage_pill(job.stage) }}{% if job.applied_on %}<span class="muted small">Applied {{ job.applied_on|short_day }}</span>{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">No applications to {{ company.name }} yet.</p>
+        {% endif %}
+      </section>
+      <section class="card">
+        <div class="card-head">
+          <h2>People</h2>
+          <a class="button button-quiet button-small" href="{{ url_for('contacts.new', company=company.id) }}">Add person</a>
+        </div>
+        {% if people %}
+          <ul class="row-list">
+            {% for person in people %}
+              <li>
+                <a class="row-link" href="{{ url_for('contacts.edit', contact_id=person.id) }}">{{ person.name }}</a>
+                <span class="muted small">{{ person.job_title }}{% if person.email %}{{ ' · ' if person.job_title }}<a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">No people at {{ company.name }} yet.</p>
+        {% endif %}
+      </section>
+    </div>
+    <aside class="job-side">
+      <section class="card">
+        <h2>About</h2>
+        <dl class="details">
+          <dt>Website</dt><dd>{% if company.website %}{{ outside_link(company.website, company.website.split('://', 1)[1].rstrip('/')) }}{% else %}Not known{% endif %}</dd>
+          <dt>Industry</dt><dd>{{ company.industry or 'Not known' }}</dd>
+          <dt>Location</dt><dd>{{ company.location or 'Not known' }}</dd>
+        </dl>
+        {% if company.notes %}<p class="notes-text">{{ company.notes }}</p>{% endif %}
+      </section>
+    </aside>
+  </div>
+
+  <div class="danger-row">
+    <form method="post" action="{{ url_for('companies.delete', company_id=company.id) }}" data-confirm="Delete this company?">
+      {{ csrf() }}<button class="button button-danger" type="submit">Delete company</button>
+    </form>
+  </div>
+{% endblock %}

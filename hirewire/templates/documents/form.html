@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select %}
+{% set title = 'Edit File' if document else 'Add File' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('documents.index') }}">&larr; Documents</a>
+  <div class="page-head"><h1>{{ title }}</h1></div>
+  <form method="post" class="card form-card narrow-form" enctype="multipart/form-data">
+    {{ csrf() }}
+    {# The demo sees the form switched off; the server refuses its uploads anyway. #}
+    <fieldset class="stack plain-fieldset" {{ 'disabled' if g.user.is_demo and not document }}>
+      {{ field('name', 'Name', values.name, errors.name, attrs='required maxlength="120" placeholder="Résumé"') }}
+      {{ field('version_label', 'Version', values.version_label, errors.version_label, hint='To tell them apart',
+               attrs='maxlength="60" placeholder="v3, for data roles"') }}
+      {{ select('kind', 'Kind', kinds, values.kind) }}
+      {% if not document %}
+        <label class="field{% if errors.file %} has-error{% endif %}">
+          <span class="field-label">File <span class="hint">PDF or Word (.docx), up to 2 MB</span></span>
+          <input class="file-input" type="file" name="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+          {% if errors.file %}<p class="field-error">{{ errors.file }}</p>{% endif %}
+        </label>
+        {% if g.user.is_demo %}<p class="card-note">The demo can't add files. Open the sample ones on the Documents page.</p>{% endif %}
+      {% else %}
+        <p class="card-note">File: {{ document.filename }}. To change the file, add it as a new version.</p>
+      {% endif %}
+      <div class="form-actions">
+        <a class="button button-quiet" href="{{ url_for('documents.index') }}">Cancel</a>
+        <button class="button" type="submit">{{ 'Save changes' if document else 'Add file' }}</button>
+      </div>
+    </fieldset>
+  </form>
+  {% if document %}
+    <div class="danger-row">
+      <form method="post" action="{{ url_for('documents.delete', document_id=document.id) }}"
+            data-confirm="Delete this file? Applications that used it keep everything else.">
+        {{ csrf() }}<button class="button button-danger" type="submit">Delete file</button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, stage_pill %}
+{% from "_reminders.html" import follow_up_row, interview_row %}
+{% block title %}Dashboard - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% set here = url_for('dashboard.index') %}
+  <div class="page-head">
+    <h1>Dashboard</h1>
+    <div class="actions"><a class="button" href="{{ url_for('applications.new') }}">Add application</a></div>
+    <p class="page-sub">{{ today.strftime('%A') }}, {{ today|nice_day }}</p>
+  </div>
+
+  {% if not counts %}
+    {{ empty('Welcome to Hire Wire', 'Add the first job you applied for. Its follow-ups and interviews will show here.',
+             url_for('applications.new'), 'Add application') }}
+  {% else %}
+    <ul class="stat-row" aria-label="Applications by stage">
+      {% for stage in active_stages %}
+        <li><a class="stat" href="{{ url_for('applications.index', stage=stage) }}">
+          <span class="stat-number">{{ counts.get(stage, 0) }}</span>{{ stage_pill(stage) }}
+        </a></li>
+      {% endfor %}
+      <li><a class="stat" href="{{ url_for('applications.index', stage=closed_stages|list) }}">
+        <span class="stat-number">{{ closed_count }}</span><span class="stage stage-closed">Closed</span>
+      </a></li>
+    </ul>
+
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head">
+          <h2>Needs Attention</h2>
+          {% if due.needs_attention %}<span class="badge">{{ due.needs_attention }}</span>{% endif %}
+        </div>
+        {% if due.overdue or due.today or nudges %}
+          <ul class="reminder-list">
+            {% for item in due.overdue + due.today %}{{ follow_up_row(item, today, here, snooze_choices=snooze_choices) }}{% endfor %}
+            {% for job in nudges %}
+              {% set quiet_days = (moment - job.stage_changed_at).days %}
+              <li class="reminder is-nudge">
+                <div class="reminder-text">
+                  <a class="reminder-job" href="{{ url_for('applications.detail', job_id=job.id) }}">{{ job.company.name }} · {{ job.role_title }}</a>
+                  <p class="reminder-note">No news for {{ quiet_days }} days. Mark it as No reply?</p>
+                  <p class="reminder-when">{{ job.stage_label }} since {{ job.stage_changed_at|nice_date }}</p>
+                </div>
+                <div class="reminder-actions">
+                  <form method="post" action="{{ url_for('reminders.keep_waiting', job_id=job.id) }}" class="inline-form">
+                    {{ csrf() }}<input type="hidden" name="next" value="{{ here }}">
+                    <button class="button button-quiet button-small" type="submit">Keep waiting</button>
+                  </form>
+                  <form method="post" action="{{ url_for('reminders.mark_no_reply', job_id=job.id) }}" class="inline-form">
+                    {{ csrf() }}<input type="hidden" name="next" value="{{ here }}">
+                    <button class="button button-small" type="submit">Mark as No reply</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">You're all caught up. Nothing is due today.</p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2>Upcoming Interviews</h2>
+          <a class="small" href="{{ url_for('reminders.schedule') }}">See schedule</a>
+        </div>
+        {% if interviews %}
+          <ul class="reminder-list">{% for interview in interviews %}{{ interview_row(interview) }}{% endfor %}</ul>
+        {% else %}
+          <p class="card-note">No interviews in the next two weeks.</p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Coming This Week</h2></div>
+        {% if due.this_week %}
+          <ul class="reminder-list">{% for item in due.this_week %}{{ follow_up_row(item, today, here, snooze_choices=snooze_choices) }}{% endfor %}</ul>
+        {% else %}
+          <p class="card-note">No follow-ups in the next 7 days.</p>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Recent Activity</h2></div>
+        {% if recent %}
+          <ul class="activity-list">
+            {% for change in recent %}
+              <li>
+                <span class="activity-what">{{ describe(change) }}:
+                  <a href="{{ url_for('applications.detail', job_id=change.application.id) }}">{{ change.application.company.name }} · {{ change.application.role_title }}</a></span>
+                <span class="muted small">{{ change.changed_at|relative_day }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">Nothing yet.</p>
+        {% endif %}
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% from "_reminders.html" import follow_up_row, interview_row %}
+{% block title %}Schedule - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% set here = url_for('reminders.schedule') %}
+  <div class="page-head">
+    <h1>Schedule</h1>
+    <p class="page-sub">Interviews and follow-ups for the next 60 days.
+      {% if not g.user.calendar_token %}<a href="{{ url_for('settings.index') }}#calendar">Put them in your phone's calendar</a>.{% endif %}</p>
+  </div>
+
+  {% if overdue %}
+    <section class="card schedule-day is-overdue-day">
+      <h2>Overdue</h2>
+      <ul class="reminder-list">
+        {% for item in overdue %}{{ follow_up_row(item, today, here, snooze_choices=snooze_choices) }}{% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% for day, items in days %}
+    <section class="card schedule-day">
+      <h2>{{ day|relative_day }}{% if day|relative_day != day|short_day %} <span class="muted">· {{ day.strftime('%a') }}, {{ day|short_day }}</span>{% endif %}</h2>
+      <ul class="reminder-list">
+        {% for kind, item in items %}
+          {% if kind == 'interview' %}{{ interview_row(item, show_day=False) }}{% else %}{{ follow_up_row(item, today, here, show_day=False, snooze_choices=snooze_choices) }}{% endif %}
+        {% endfor %}
+      </ul>
+    </section>
+  {% endfor %}
+
+  {% if not overdue and not days %}
+    {{ empty('Nothing Scheduled', 'Interviews and follow-ups you add to an application show here, day by day.',
+             url_for('applications.index'), 'Go to applications') }}
+  {% endif %}
+{% endblock %}

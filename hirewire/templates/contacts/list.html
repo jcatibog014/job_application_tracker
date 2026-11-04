@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, empty, outside_link, pencil_icon %}
+{% block title %}Contacts - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Contacts</h1>
+    <div class="actions">
+      <form class="search-form" method="get" role="search" data-filters>
+        <label class="visually-hidden" for="contact-search">Search contacts</label>
+        <input id="contact-search" class="control" type="search" name="q" value="{{ words }}" placeholder="Search people" maxlength="100">
+        <label class="visually-hidden" for="contact-company">Company</label>
+        <select id="contact-company" class="control" name="company">
+          <option value="">All companies</option>
+          {% for id_, name in companies %}<option value="{{ id_ }}"{% if company == id_|string %} selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        <button class="button button-quiet" type="submit">Search</button>
+      </form>
+      <a class="button" href="{{ url_for('contacts.new') }}">Add person</a>
+    </div>
+    <p class="page-sub">Recruiters, hiring managers and the friends who referred you.</p>
+  </div>
+  {% if people %}
+    <ul class="contact-grid">
+      {% for person in people %}
+        <li class="card contact-card">
+          <div class="contact-head">
+            <span class="avatar" aria-hidden="true">{{ person.name[:1]|upper }}</span>
+            <div class="contact-name">
+              <h2>{{ person.name }}</h2>
+              <p class="muted small">{{ [person.job_title, person.company.name if person.company else '']|select|join(' at ') or 'No details yet' }}</p>
+            </div>
+            <a class="icon-link" href="{{ url_for('contacts.edit', contact_id=person.id) }}" aria-label="Edit {{ person.name }}">{{ pencil_icon() }}</a>
+          </div>
+          <ul class="contact-ways">
+            {% if person.email %}<li><a href="mailto:{{ person.email }}">{{ person.email }}</a></li>{% endif %}
+            {% if person.phone %}<li><a href="tel:{{ person.phone|replace(' ', '') }}">{{ person.phone }}</a></li>{% endif %}
+            {% if person.profile_url %}<li>{{ outside_link(person.profile_url, 'Profile') }}</li>{% endif %}
+          </ul>
+          {% if person.application_links %}
+            <p class="contact-jobs small">
+              {% for link in person.application_links %}
+                <a href="{{ url_for('applications.detail', job_id=link.application.id) }}">{{ link.application.role_title }}</a> <span class="muted">({{ link.role_label|lower }})</span>{{ ', ' if not loop.last }}
+              {% endfor %}
+            </p>
+          {% endif %}
+          {% if person.notes %}<p class="notes-text small">{{ person.notes }}</p>{% endif %}
+          <div class="contact-foot">
+            <span class="muted small">{% if person.last_contacted_on %}Last talked: {{ person.last_contacted_on|relative_day }}{% else %}Not contacted yet{% endif %}</span>
+            {% if person.last_contacted_on != today %}
+              <form method="post" action="{{ url_for('contacts.contacted_today', contact_id=person.id) }}" class="inline-form">
+                {{ csrf() }}<button class="button button-quiet button-small" type="submit">Talked today</button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% elif words or company %}
+    {{ empty('No Matching People', 'Nobody matches this search.', url_for('contacts.index'), 'Show everyone') }}
+  {% else %}
+    {{ empty('No Contacts Yet', 'Keep the people you meet here: who referred you, who interviewed you, who to thank.',
+             url_for('contacts.new'), 'Add person') }}
+  {% endif %}
+{% endblock %}
