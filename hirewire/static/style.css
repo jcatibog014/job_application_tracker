@@ -385,6 +385,9 @@ img { max-width: 100%; height: auto; display: block; }
 
 .table-card { padding: 0; overflow: hidden; }
 .table-scroll { overflow-x: auto; }
+/* Thin scrollbars in the theme's own greys, in every area that scrolls (and the page). */
+html { scrollbar-color: var(--rule-strong) var(--bg); }
+.table-scroll, .board, .sidebar, .description-text { scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; }
 .table { width: 100%; border-collapse: collapse; font-size: .95rem; }
 .table th { text-align: left; font-size: .8rem; font-weight: 600; color: var(--ink-soft); padding: .7rem 1rem; background: var(--surface-soft); border-bottom: 1px solid var(--rule); white-space: nowrap; }
 .table td { padding: .75rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
@@ -469,24 +472,46 @@ img { max-width: 100%; height: auto; display: block; }
 /* ---------- The Board ---------- */
 
 .board-status { min-height: 1.5rem; margin: -.75rem 0 .75rem; color: var(--ink-soft); font-size: .92rem; }
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(13.5rem, 1fr); gap: .9rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: var(--rule-strong) transparent; scroll-snap-type: x mandatory; align-items: start; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(13.5rem, 1fr); gap: .9rem; overflow-x: auto; padding-bottom: 1rem; scroll-snap-type: x mandatory; align-items: start; }
 .board-column { scroll-snap-align: start; display: flex; flex-direction: column; gap: .6rem; min-height: 12rem; padding: .75rem; background: var(--surface-soft); border: 1px solid var(--rule); border-radius: var(--radius); }
+/* Each column's top edge wears its stage colour, the same as its pill. */
+.board-column[data-drop="saved"] { border-top: 3px solid var(--stage-saved-ink); }
+.board-column[data-drop="applied"] { border-top: 3px solid var(--stage-applied-ink); }
+.board-column[data-drop="screening"] { border-top: 3px solid var(--stage-screening-ink); }
+.board-column[data-drop="interview"] { border-top: 3px solid var(--stage-interview-ink); }
+.board-column[data-drop="offer"] { border-top: 3px solid var(--stage-offer-ink); }
+.board-closed { border-top: 3px solid var(--rule-strong); }
 .board-head { display: flex; justify-content: space-between; align-items: center; margin: 0 0 .15rem; font-size: .95rem; }
 .board-count { min-width: 1.6rem; padding: 0 .4rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--rule); color: var(--ink-soft); font-size: .8rem; font-weight: 600; text-align: center; }
 .board-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
 .board-cards:has(.board-card) + .board-empty { display: none; }
 .board-empty { margin: 0; padding: 1rem .5rem; border: 1px dashed var(--rule-strong); border-radius: var(--radius-small); color: var(--ink-soft); font-size: .88rem; text-align: center; }
-.board-card { position: relative; padding: .7rem .8rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-small); box-shadow: var(--shadow); cursor: grab; }
+.board-card { position: relative; padding: .7rem .8rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-small); box-shadow: var(--shadow); cursor: pointer; }
 .board-card:hover { border-color: var(--rule-strong); }
 .board-card.is-dragged { opacity: .45; }
-.board-card-company { margin: 0; font-size: .82rem; color: var(--ink-soft); }
+.board-card-company { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .board-card-title { display: block; color: var(--ink); font-weight: 600; line-height: 1.3; text-decoration: none; }
 .board-card-title:hover { color: var(--accent); text-decoration: underline; }
 .board-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; margin: .4rem 0 0; color: var(--ink-soft); font-size: .8rem; }
 .board-card-stage:empty { display: none; }
-.card-move { margin-top: .4rem; font-size: .85rem; }
-.card-move summary { cursor: pointer; color: var(--accent); width: max-content; }
-.card-move form { display: flex; gap: .4rem; margin: .5rem 0 0; }
+/* The top line: the company's letter, its name, then the drag handle and the move button. */
+.board-card-top { display: flex; align-items: center; gap: .5rem; margin-bottom: .35rem; }
+.board-card-top .board-card-company { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.company-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; font-family: var(--headline); font-size: .8rem; font-weight: 700; }
+.company-badge-0 { background: light-dark(#dff3f0, #12302d); color: light-dark(#0f5e57, #7fdccf); }
+.company-badge-1 { background: light-dark(#e6e8fb, #23264a); color: light-dark(#3730a3, #a5adf5); }
+.company-badge-2 { background: light-dark(#fce7ef, #3b1d2a); color: light-dark(#9d174d, #f5a3c2); }
+.company-badge-3 { background: light-dark(#fdecdc, #3a2416); color: light-dark(#9a3412, #f8b98a); }
+.company-badge-4 { background: light-dark(#e0f0fb, #14293a); color: light-dark(#075985, #8fcdf3); }
+.company-badge-5 { background: light-dark(#eef3dc, #2a2f17); color: light-dark(#4d5c12, #c7d68a); }
+.drag-handle { flex: none; display: inline-flex; padding: .2rem; color: var(--ink-soft); cursor: grab; opacity: .55; }
+.board-card:hover .drag-handle { opacity: 1; }
+.card-move { position: relative; flex: none; font-size: .85rem; }
+.card-move summary { display: inline-flex; align-items: center; justify-content: center; width: 1.8rem; height: 1.8rem; border-radius: var(--radius-small); color: var(--ink-soft); list-style: none; cursor: pointer; }
+.card-move summary::-webkit-details-marker { display: none; }
+.card-move summary:hover, .card-move[open] summary { background: var(--accent-soft); color: var(--accent-strong); }
+.card-move-menu { position: absolute; right: 0; top: calc(100% + .3rem); z-index: 5; width: 14rem; padding: .6rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-small); box-shadow: 0 .25rem 1rem rgb(0 0 0 / .15); }
+.card-move form { display: flex; gap: .4rem; margin: 0; }
 .card-move .control { min-height: 2rem; padding: .2rem .4rem; font-size: .85rem; }
 .board-more { font-size: .88rem; text-align: center; }
 .drop-zones { display: none; gap: .4rem; }
