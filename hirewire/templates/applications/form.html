@@ -40,7 +40,9 @@
         {{ textarea('job_description', 'Job description', values.job_description, errors.job_description, rows=8,
                     hint='Paste it here: postings often disappear once the job is filled.') }}
       </div>
-      {% block extra_fields %}{% endblock %}
+      {{ select('resume_id', 'Résumé sent', resumes, values.resume_id,
+                hint='From Documents' if resumes|length > 1 else 'Add files in Documents first') }}
+      {{ select('cover_letter_id', 'Cover letter sent', cover_letters, values.cover_letter_id) }}
     </div>
     <div class="form-actions">
       <a class="button button-quiet" href="{{ url_for('applications.detail', job_id=job.id) if job else url_for('applications.index') }}">Cancel</a>

@@ -28,7 +28,24 @@
           <p class="card-note">No applications to {{ company.name }} yet.</p>
         {% endif %}
       </section>
-      {% block more_cards %}{% endblock %}
+      <section class="card">
+        <div class="card-head">
+          <h2>People</h2>
+          <a class="button button-quiet button-small" href="{{ url_for('contacts.new', company=company.id) }}">Add person</a>
+        </div>
+        {% if people %}
+          <ul class="row-list">
+            {% for person in people %}
+              <li>
+                <a class="row-link" href="{{ url_for('contacts.edit', contact_id=person.id) }}">{{ person.name }}</a>
+                <span class="muted small">{{ person.job_title }}{% if person.email %}{{ ' · ' if person.job_title }}<a href="mailto:{{ person.email }}">{{ person.email }}</a>{% endif %}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="card-note">No people at {{ company.name }} yet.</p>
+        {% endif %}
+      </section>
     </div>
     <aside class="job-side">
       <section class="card">

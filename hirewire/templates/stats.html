@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty %}
+{% block title %}Stats - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <h1>Stats</h1>
+    <p class="page-sub">How your job hunt is going, from every stage change so far.</p>
+  </div>
+  {% if not summary.applied %}
+    {{ empty('No Stats Yet', 'Stats start once you have applied for a job. Saved ones are not counted.',
+             url_for('applications.new'), 'Add application') }}
+  {% else %}
+    {# Headline numbers are stat tiles, not charts. #}
+    <ul class="stat-row kpi-row">
+      <li class="stat"><span class="stat-label">Applications sent</span><span class="stat-number">{{ summary.applied }}</span></li>
+      <li class="stat"><span class="stat-label">Response rate</span><span class="stat-number">{{ summary.response_rate }}%</span>
+        <span class="stat-note">{{ summary.replied }} heard back</span></li>
+      <li class="stat"><span class="stat-label">Reached interview</span><span class="stat-number">{{ summary.interviews }}</span></li>
+      <li class="stat"><span class="stat-label">Offers</span><span class="stat-number">{{ summary.offers }}</span></li>
+      <li class="stat"><span class="stat-label">Days to first reply</span>
+        <span class="stat-number">{{ '%.0f'|format(summary.median_days) if summary.median_days is not none else '–' }}</span>
+        <span class="stat-note">the middle value</span></li>
+    </ul>
+
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head"><h2>How Far They Got</h2></div>
+        <p class="card-note">Out of every application you sent, how many reached each step.</p>
+        <ol class="hbars">
+          {% for label, count, percent in summary.funnel %}
+            <li class="hbar-row" title="{{ label }}: {{ count }} ({{ percent }}%)">
+              <span class="hbar-label">{{ label }}</span>
+              <svg class="hbar" width="100%" height="20" role="img" aria-label="{{ label }}: {{ count }}, {{ percent }} percent">
+                <rect class="hbar-track" x="0" y="0" width="100%" height="20" rx="4"></rect>
+                {% if count %}
+                  <rect class="hbar-fill" x="0" y="0" width="{{ [percent, 1]|max }}%" height="20" rx="4"></rect>
+                  <rect class="hbar-fill" x="0" y="0" width="{{ ([percent, 1]|max) / 2 }}%" height="20"></rect>
+                {% endif %}
+              </svg>
+              <span class="hbar-value">{{ count }} <span class="muted">· {{ percent }}%</span></span>
+            </li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Sent per Week</h2></div>
+        <p class="card-note">Applications sent in each of the last 12 weeks. Point at a column for its number.</p>
+        <svg class="columns" viewBox="0 0 600 184" role="img" aria-label="Applications sent per week, last 12 weeks">
+          <line class="axis" x1="0" y1="150.5" x2="600" y2="150.5"></line>
+          {% for monday, count, middle, path, top in weekly %}
+            <g class="column">
+              <title>Week of {{ monday|short_day }}: {{ count }} sent</title>
+              <rect class="column-hit" x="{{ middle - 25 }}" y="0" width="50" height="150"></rect>
+              {% if path %}<path class="column-fill" d="{{ path }}"></path>{% endif %}
+              {% if count and count == week_top or loop.last %}
+                <text class="column-value" x="{{ middle }}" y="{{ top - 6 if count else 144 }}" text-anchor="middle">{{ count }}</text>
+              {% endif %}
+              {% if loop.first or loop.last or loop.index0 % 4 == 0 %}
+                <text class="column-label" x="{{ middle }}" y="176" text-anchor="middle">{{ monday.strftime('%b') }} {{ monday.day }}</text>
+              {% endif %}
+            </g>
+          {% endfor %}
+        </svg>
+        <details class="table-view">
+          <summary>Show as a table</summary>
+          <table class="table small-table">
+            <thead><tr><th>Week of</th><th class="num">Sent</th></tr></thead>
+            <tbody>{% for monday, count in summary.weeks %}<tr><td>{{ monday|short_day }}</td><td class="num">{{ count }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </details>
+      </section>
+
+      <section class="card table-card">
+        <h2 class="table-title">Where You Found Them</h2>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Found it on</th><th class="num">Sent</th><th class="num">Reached interview</th><th class="num">Rate</th></tr></thead>
+            <tbody>
+              {% for source, sent, interviews in summary.sources %}
+                <tr><td>{{ source }}</td><td class="num">{{ sent }}</td><td class="num">{{ interviews }}</td>
+                  <td class="num">{{ (100 * interviews / sent)|round|int }}%</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>How They Ended</h2></div>
+        <ul class="ending-list">
+          {% for label, count in summary.endings %}
+            <li><span>{{ label }}</span><span class="ending-count">{{ count }}</span></li>
+          {% endfor %}
+        </ul>
+      </section>
+    </div>
+  {% endif %}
+{% endblock %}

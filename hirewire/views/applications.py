@@ -11,7 +11,8 @@ from .. import applications, auth, companies, db, filters, forms, workflow
 from ..auth import login_required
 from ..dates import local_today, utcnow
 from ..models import (
-    ACTIVE_STAGES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, STAGES, WORK_MODES, Application, Note, SavedView,
+    ACTIVE_STAGES, CONTACT_ROLES, CURRENCIES, SAVED, SOURCES, STAGE_LABELS, STAGES, WORK_MODES, Application,
+    ApplicationContact, Contact, Document, Note, SavedView,
 )
 from ..ownership import get_child, get_mine, mine
 
@@ -21,7 +22,17 @@ bp = Blueprint("applications", __name__, url_prefix="/applications")
 def get_job(job_id):
     return get_mine(Application, job_id, selectinload(Application.company), selectinload(Application.notes),
                     selectinload(Application.stage_changes), selectinload(Application.interviews),
-                    selectinload(Application.follow_ups), undefer(Application.job_description))
+                    selectinload(Application.follow_ups), undefer(Application.job_description),
+                    selectinload(Application.contact_links).selectinload(ApplicationContact.contact),
+                    selectinload(Application.resume), selectinload(Application.cover_letter))
+
+
+def my_documents():
+    return db.session().scalars(mine(Document).order_by(Document.name, Document.created_at.desc())).all()
+
+
+def document_choices(kind):
+    return [("", "None")] + [(str(doc.id), doc.title) for doc in my_documents() if doc.kind in (kind, "other")]
 
 
 def form_page(template_values, errors, job=None):
@@ -32,6 +43,7 @@ def form_page(template_values, errors, job=None):
         work_modes=[("", "Not sure")] + list(WORK_MODES.items()),
         sources=[("", "Not sure")] + [(source, source) for source in SOURCES],
         currencies=[(currency, currency) for currency in CURRENCIES],
+        resumes=document_choices("resume"), cover_letters=document_choices("cover_letter"),
     ), 400 if errors else 200
 
 
@@ -94,7 +106,8 @@ def new():
         # Quick add and the company page fill some fields in through the address.
         start = {name: request.args.get(name, "") for name in ("company_name", "role_title")}
         return form_page({"stage": "applied", "currency": "PHP", **start}, {})
-    values, errors = applications.read_form(request.form, is_new=True)
+    values, errors = applications.read_form(request.form, is_new=True,
+                                            document_ids={doc.id for doc in my_documents()})
     if errors:
         return form_page(request.form, errors)
     s = db.session()
@@ -116,9 +129,12 @@ def detail(job_id):
     job = get_job(job_id)
     forward, endings, back = workflow.group_moves(job.stage, workflow.came_from(db.session(), job))
     moment = utcnow()
+    linked = {link.contact_id for link in job.contact_links}
+    people = [person for person in db.session().scalars(mine(Contact).order_by(Contact.name)) if person.id not in linked]
     return render_template("applications/detail.html", job=job, timeline=applications.timeline(job),
                            forward=forward, endings=endings, back=back, now=moment,
-                           today=local_today(g.user.timezone, moment))
+                           today=local_today(g.user.timezone, moment), people=people,
+                           roles=list(CONTACT_ROLES.items()))
 
 
 def wants_json():
@@ -155,7 +171,8 @@ def edit(job_id):
     job = get_job(job_id)
     if request.method == "GET":
         return form_page(applications.form_values(job), {}, job)
-    values, errors = applications.read_form(request.form, is_new=False)
+    values, errors = applications.read_form(request.form, is_new=False,
+                                            document_ids={doc.id for doc in my_documents()})
     if errors:
         return form_page(request.form, errors, job)
     applications.apply_form(db.session(), job, values, g.user.id, utcnow())

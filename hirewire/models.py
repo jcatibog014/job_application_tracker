@@ -2,8 +2,11 @@
 
     users ─┬─< companies ──< applications ─┬─< notes
            ├─< applications                ├─< stage_changes
-           └─< saved_views                 ├─< interviews
-                                           └─< follow_ups
+           ├─< contacts ──────────────┐    ├─< interviews
+           ├─< documents              │    ├─< follow_ups
+           └─< saved_views            └──< application_contacts (with a role)
+
+    applications.resume_id / cover_letter_id ──> documents
 
 Every row belongs to one user, and every query starts from that user
 (ownership.py), so nobody can see anyone else's job hunt. Deleting a user
@@ -13,7 +16,7 @@ Moments are naive UTC (dates.utcnow()); days are plain dates.
 """
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, Index, LargeBinary, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .dates import DEFAULT_TIMEZONE, utcnow
@@ -128,6 +131,9 @@ class Application(Base):
     job_description: Mapped[str] = mapped_column(Text, default="", deferred=True)
     # "Keep waiting" on the No reply nudge hides it until this day.
     quiet_until: Mapped[date | None]
+    # Which version went with this application. Deleting the file keeps the application.
+    resume_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id", ondelete="SET NULL"))
+    cover_letter_id: Mapped[int | None] = mapped_column(ForeignKey("documents.id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(default=utcnow)
 
@@ -143,6 +149,10 @@ class Application(Base):
     follow_ups: Mapped[list["FollowUp"]] = relationship(
         back_populates="application", cascade="all, delete-orphan", passive_deletes=True,
         order_by="FollowUp.due_on")
+    contact_links: Mapped[list["ApplicationContact"]] = relationship(
+        back_populates="application", cascade="all, delete-orphan", passive_deletes=True)
+    resume: Mapped["Document | None"] = relationship(foreign_keys=[resume_id])
+    cover_letter: Mapped["Document | None"] = relationship(foreign_keys=[cover_letter_id])
 
     @property
     def stage_label(self):
@@ -226,6 +236,80 @@ class FollowUp(Base):
 
     application: Mapped[Application] = relationship(back_populates="follow_ups")
     interview: Mapped["Interview | None"] = relationship()
+
+
+CONTACT_ROLES = {
+    "recruiter": "Recruiter", "hiring_manager": "Hiring manager", "interviewer": "Interviewer",
+    "referral": "Referral", "other": "Other",
+}
+
+
+class Contact(Base):
+    """Someone you talked to: a recruiter, a hiring manager, a friend who referred you."""
+    __tablename__ = "contacts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # Deleting the company keeps the person.
+    company_id: Mapped[int | None] = mapped_column(ForeignKey("companies.id", ondelete="SET NULL"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    job_title: Mapped[str] = mapped_column(String(120), default="")
+    email: Mapped[str] = mapped_column(String(200), default="")
+    phone: Mapped[str] = mapped_column(String(40), default="")
+    profile_url: Mapped[str] = mapped_column(String(500), default="")  # LinkedIn or similar
+    notes: Mapped[str] = mapped_column(Text, default="")
+    last_contacted_on: Mapped[date | None]
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    company: Mapped["Company | None"] = relationship()
+    application_links: Mapped[list["ApplicationContact"]] = relationship(
+        back_populates="contact", cascade="all, delete-orphan", passive_deletes=True)
+
+
+class ApplicationContact(Base):
+    """Many-to-many with a role: this person was the recruiter for that application."""
+    __tablename__ = "application_contacts"
+    __table_args__ = (CheckConstraint(f"role IN ({sql_list(CONTACT_ROLES)})", name="role_known"),)
+
+    application_id: Mapped[int] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), primary_key=True)
+    contact_id: Mapped[int] = mapped_column(ForeignKey("contacts.id", ondelete="CASCADE"), primary_key=True, index=True)
+    role: Mapped[str] = mapped_column(String(15), default="recruiter")
+
+    application: Mapped[Application] = relationship(back_populates="contact_links")
+    contact: Mapped[Contact] = relationship(back_populates="application_links")
+
+    @property
+    def role_label(self):
+        return CONTACT_ROLES[self.role]
+
+
+DOCUMENT_KINDS = {"resume": "Résumé", "cover_letter": "Cover letter", "other": "Other"}
+
+
+class Document(Base):
+    """A résumé or cover letter version (PDF or Word), kept in the database
+    because Render's free disk is wiped on every restart."""
+    __tablename__ = "documents"
+    __table_args__ = (CheckConstraint(f"kind IN ({sql_list(DOCUMENT_KINDS)})", name="kind_known"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(15), default="resume")
+    name: Mapped[str] = mapped_column(String(120))
+    version_label: Mapped[str] = mapped_column(String(60), default="")  # "v3, data roles"
+    filename: Mapped[str] = mapped_column(String(200))
+    mime: Mapped[str] = mapped_column(String(100))
+    size: Mapped[int]
+    data: Mapped[bytes] = mapped_column(LargeBinary, deferred=True)  # deferred: only a download loads it
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    @property
+    def kind_label(self):
+        return DOCUMENT_KINDS[self.kind]
+
+    @property
+    def title(self):
+        return f"{self.name} ({self.version_label})" if self.version_label else self.name
 
 
 class SavedView(Base):

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% from "_macros.html" import csrf, field, select, textarea %}
+{% set title = 'Edit Person' if contact else 'Add Person' %}
+{% block title %}{{ title }} - {{ APP_NAME }}{% endblock %}
+{% block content %}
+  {% if job %}
+    <a class="back-link" href="{{ url_for('applications.detail', job_id=job.id) }}#people">&larr; {{ job.role_title }}</a>
+  {% else %}
+    <a class="back-link" href="{{ url_for('contacts.index') }}">&larr; Contacts</a>
+  {% endif %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    {% if job %}<p class="page-sub">They will be linked to {{ job.role_title }}.</p>{% endif %}
+  </div>
+  <form method="post" class="card form-card">
+    {{ csrf() }}
+    {% if job %}<input type="hidden" name="job" value="{{ job.id }}">{% endif %}
+    <div class="form-grid">
+      {{ field('name', 'Name', values.name, errors.name, attrs='required maxlength="120"' ~ ('' if contact else ' autofocus')) }}
+      {{ field('job_title', 'Job title', values.job_title, errors.job_title, attrs='maxlength="120" placeholder="Talent acquisition lead"') }}
+      {{ select('company_id', 'Company', companies, values.company_id or '') }}
+      {% if job %}
+        {{ select('role', 'Their part in this application', [('recruiter', 'Recruiter'), ('hiring_manager', 'Hiring manager'), ('interviewer', 'Interviewer'), ('referral', 'Referral'), ('other', 'Other')], values.role or 'recruiter') }}
+      {% else %}
+        {{ field('last_contacted_on', 'Last talked', values.last_contacted_on, errors.last_contacted_on, type='date') }}
+      {% endif %}
+      {{ field('email', 'Email', values.email, errors.email, type='email', attrs='maxlength="200"') }}
+      {{ field('phone', 'Phone', values.phone, errors.phone, type='tel', attrs='maxlength="40" placeholder="+63 917 123 4567"') }}
+      <div class="span-2">
+        {{ field('profile_url', 'Profile link', values.profile_url, errors.profile_url, type='url', hint='LinkedIn or similar', attrs='maxlength="500" placeholder="https://"') }}
+      </div>
+      <div class="span-2">{{ textarea('notes', 'Notes', values.notes, errors.notes, rows=4, hint='How you met, what you talked about') }}</div>
+    </div>
+    <div class="form-actions">
+      <a class="button button-quiet" href="{{ url_for('applications.detail', job_id=job.id) ~ '#people' if job else url_for('contacts.index') }}">Cancel</a>
+      <button class="button" type="submit">{{ 'Save changes' if contact else 'Add person' }}</button>
+    </div>
+  </form>
+  {% if contact %}
+    <div class="danger-row">
+      <form method="post" action="{{ url_for('contacts.delete', contact_id=contact.id) }}" data-confirm="Delete {{ contact.name }}?">
+        {{ csrf() }}<button class="button button-danger" type="submit">Delete person</button>
+      </form>
+    </div>
+  {% endif %}
+{% endblock %}

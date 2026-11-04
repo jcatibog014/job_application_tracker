@@ -4,8 +4,8 @@ from sqlalchemy.orm import selectinload
 
 from .. import companies, db
 from ..auth import login_required
-from ..models import Application, Company
-from ..ownership import get_mine
+from ..models import Application, Company, Contact
+from ..ownership import get_mine, mine
 
 bp = Blueprint("companies", __name__, url_prefix="/companies")
 
@@ -42,7 +42,8 @@ def detail(company_id):
     company = get_mine(Company, company_id,
                        selectinload(Company.applications).selectinload(Application.company))
     jobs = sorted(company.applications, key=lambda job: job.updated_at, reverse=True)
-    return render_template("companies/detail.html", company=company, jobs=jobs)
+    people = db.session().scalars(mine(Contact).where(Contact.company_id == company.id).order_by(Contact.name)).all()
+    return render_template("companies/detail.html", company=company, jobs=jobs, people=people)
 
 
 @bp.route("/<int:company_id>/edit", methods=["GET", "POST"])

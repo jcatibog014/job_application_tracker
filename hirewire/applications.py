@@ -13,8 +13,9 @@ TEXT_FIELDS = (
 )
 
 
-def read_form(form, is_new):
-    """The application form -> (values, errors). A new one also has its first stage."""
+def read_form(form, is_new, document_ids=()):
+    """The application form -> (values, errors). A new one also has its first stage.
+    document_ids are the user's own files, the only ones it may point at."""
     values, errors = {}, {}
 
     def keep(name, result):
@@ -36,6 +37,9 @@ def read_form(form, is_new):
         errors["salary_max"] = "The highest pay can't be less than the lowest."
     if is_new:
         keep("stage", forms.choice(form, "stage", ACTIVE_STAGES, default="applied"))
+    for name in ("resume_id", "cover_letter_id"):
+        raw = form.get(name, "")
+        values[name] = int(raw) if raw.isdigit() and int(raw) in document_ids else None
     return values, errors
 
 
@@ -55,6 +59,7 @@ def form_values(job):
         "job_description": job.job_description, "posting_url": job.posting_url, "work_mode": job.work_mode,
         "source": job.source, "currency": job.currency, "salary_min": job.salary_min,
         "salary_max": job.salary_max, "applied_on": job.applied_on.isoformat() if job.applied_on else "",
+        "resume_id": job.resume_id or "", "cover_letter_id": job.cover_letter_id or "",
     }
 
 
