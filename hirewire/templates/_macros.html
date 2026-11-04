@@ -59,7 +59,9 @@
 {% macro stage_pill(stage) %}<span class="stage stage-{{ stage }}">{{ STAGE_LABELS[stage] }}</span>{% endmacro %}
 
 {# An outside link: opens in a new tab, and the other site can't reach back into this one. #}
-{% macro outside_link(href, text) %}<a href="{{ href }}" target="_blank" rel="noopener noreferrer nofollow">{{ text }}</a>{% endmacro %}
+{% macro outside_link(href, text) -%}
+  <a href="{{ href }}" target="_blank" rel="noopener noreferrer nofollow">{{ text }}<svg class="outside-icon" viewBox="0 0 12 12" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5H2.5v7h7v-2M7 2.5h2.5V5M9.5 2.5 5.5 6.5"></path></svg><span class="visually-hidden"> (opens in a new tab)</span></a>
+{%- endmacro %}
 
 {# A row of the empty kind: a title and one sentence, never a stand-in picture. #}
 {% macro empty(title, text, button_href=None, button_text=None) %}

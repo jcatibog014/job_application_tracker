@@ -160,6 +160,24 @@ def test_the_dashboard_has_every_kind_of_reminder(demo):
         assert words in page, words
 
 
+def test_each_stat_card_opens_its_applications(demo):
+    page = demo.get("/dashboard/").get_data(as_text=True)
+    links = re.findall(r'<a class="stat" href="([^"]+)"', page)
+    assert links[3] == "/applications/?stage=interview"
+    assert "Interview: 2. Show them on the Applications page" in page
+    # The card's number is what the filtered list shows.
+    interviews = demo.get("/applications/?stage=interview").get_data(as_text=True)
+    assert "2 applications" in interviews
+    closed = demo.get(links[-1].replace("&amp;", "&")).get_data(as_text=True)
+    assert "6 applications" in closed
+
+
+def test_join_links_open_in_a_new_tab(demo):
+    page = demo.get("/dashboard/").get_data(as_text=True)
+    join = re.search(r'<a href="https://meet[^"]+"[^>]*>Join link.*?</a>', page, re.DOTALL).group(0)
+    assert 'target="_blank"' in join and "noopener" in join and "(opens in a new tab)" in join
+
+
 def test_every_saved_view_finds_something(app, demo):
     page = demo.get("/applications/").get_data(as_text=True)
     links = re.findall(r'href="(/applications/\?[^"]+)"', page)
