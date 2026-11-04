@@ -182,7 +182,29 @@ function setUpBoard() {
   });
 }
 
+// The demo's note can be closed. It stays closed until the browser is closed.
+function setUpDemoNote() {
+  const note = document.querySelector("[data-demo-note]");
+  if (!note) return;
+  const button = note.querySelector("[data-demo-close]");
+  try {
+    if (sessionStorage.getItem("hirewire-demo-note") === "hidden") note.hidden = true;
+  } catch (error) {
+    // Storage can be blocked. The note just shows again on the next page.
+  }
+  button.hidden = false;
+  button.addEventListener("click", () => {
+    note.hidden = true;
+    try {
+      sessionStorage.setItem("hirewire-demo-note", "hidden");
+    } catch (error) {
+      // Hidden on this page only.
+    }
+  });
+}
+
 setUpTheme();
+setUpDemoNote();
 setUpMenu();
 setUpUserMenu();
 setUpConfirm();

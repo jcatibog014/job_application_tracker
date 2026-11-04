@@ -21,7 +21,11 @@
 
   <main id="main" class="page {% block page_class %}{% endblock %}">
     {% if g.user and g.user.is_demo %}
-      <p class="demo-note">You are in the demo. Your changes are only yours, and this sample account is deleted after 2 hours.</p>
+      {# A thin bar. With JavaScript it can be closed, and stays closed for this browser session. #}
+      <div class="demo-note" data-demo-note>
+        <p><strong>Demo account.</strong> Your changes are private and deleted after 2 hours.</p>
+        <button class="demo-close" type="button" data-demo-close aria-label="Hide this note" hidden>&times;</button>
+      </div>
     {% endif %}
     {% with messages = get_flashed_messages() %}
       {% if messages %}
