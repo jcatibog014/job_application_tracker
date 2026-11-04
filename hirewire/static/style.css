@@ -242,12 +242,12 @@ img { max-width: 100%; height: auto; display: block; }
 /* ---------- Login and sign-up ---------- */
 
 .welcome-layout .page { max-width: none; padding: 0; display: flex; }
-.welcome { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.welcome-panel { background: var(--accent); color: #fff; padding: clamp(2rem, 6vw, 5rem); }
-.welcome-panel .wordmark { color: #fff; }
-.welcome-panel .wordmark .mark { color: rgb(255 255 255 / .18); }
-.welcome-line { font-size: clamp(1.6rem, 3vw, 2.6rem); font-weight: 650; line-height: 1.2; letter-spacing: -.015em; margin: 3rem 0 1.5rem; max-width: 18em; }
-.welcome-points { margin: 0; padding: 0 0 0 1.2rem; max-width: 30em; opacity: .92; display: grid; gap: .4rem; }
+/* The green panel takes a third of the screen; the login card has the rest. */
+.welcome { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+.welcome-panel { background: var(--accent); color: #fff; padding: clamp(2rem, 4vw, 4rem); }
+.welcome-panel .wordmark { color: #fff; gap: .75rem; font-size: 2.25rem; }
+.welcome-panel .wordmark .mark { width: 3.25rem; height: 3.25rem; color: rgb(255 255 255 / .18); }
+.welcome-line { font-size: clamp(1.5rem, 2.3vw, 2.4rem); font-weight: 650; line-height: 1.2; letter-spacing: -.015em; margin: 3rem 0 0; max-width: 16em; }
 .welcome-cards { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem 1rem; }
 .welcome-cards .card { width: 100%; max-width: 26rem; margin: 0; padding: 1.75rem; }
 .welcome-cards h1 { font-size: 1.6rem; }
