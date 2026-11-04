@@ -233,6 +233,7 @@ img { max-width: 100%; height: auto; display: block; }
 .button-danger { background: var(--surface); color: var(--danger); border-color: var(--danger); font-weight: 500; }
 .button-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 .button-small { min-height: 2rem; padding: 0 .7rem; font-size: .88rem; }
+.button:disabled { opacity: .45; pointer-events: none; }
 .button-icon { width: var(--control-height); padding: 0; }
 .link-button { padding: 0; background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; }
 .link-button:hover { text-decoration: underline; }

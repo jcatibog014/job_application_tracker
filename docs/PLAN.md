@@ -1,6 +1,13 @@
 # Plan: "Hire Wire", a job application tracker
 
-The plan agreed on 2026-11-03.
+The plan agreed on 2026-11-03. What changed while building it:
+- The "interview coming" and "follow-up due" filters came with stage 5, because they need its tables. The starter views are Active, Needs Follow-up and Interviews This Week; the demo adds Remote.
+- Adding an interview moves the application to Interview (from Applied, Screening or No reply).
+- Settings also has Delete account, since anyone can sign up.
+- `upgrade-db` turns foreign keys off on SQLite while migrating. SQLite rebuilds a changed table by dropping it, and with foreign keys on that drop deleted every row pointing at it (it emptied a practice database once). A test now upgrades a database that has data.
+- Tests can't go online: a fixture makes every network connection fail.
+- The Stats charts use a slightly brighter teal than the buttons, chosen so it passes the contrast checks in both themes.
+
 ## Context
 
 A new learning project for https://github.com/jcatibog014/job_application_tracker (it only has a one-line README). It tracks companies, application stages, interview dates and follow-ups. The skills to practise are **filtering, status workflows and reminders**.

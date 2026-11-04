@@ -18,7 +18,13 @@
           <button class="button" type="submit">Log in</button>
         </form>
         <p class="card-note">New here? <a href="{{ url_for('auth.signup') }}">Sign up</a> · <a href="{{ url_for('auth.forgot') }}">Forgot your password?</a></p>
-        {% block demo %}{% endblock %}
+        <div class="demo-box">
+          <p class="card-note">Just looking? Try a sample job hunt. It's yours alone, and it disappears after 2 hours.</p>
+          <form method="post" action="{{ url_for('auth.demo') }}">
+            {{ csrf() }}
+            <button class="button button-quiet" type="submit">Try Demo</button>
+          </form>
+        </div>
       </div>
     </section>
   </div>

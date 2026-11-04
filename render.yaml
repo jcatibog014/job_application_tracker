@@ -1,0 +1,34 @@
+# Render "Blueprint": tells Render how to build and run Hire Wire.
+# Render reads this file when you choose New -> Blueprint and pick this repo.
+# The service name becomes the web address: hire-wire.onrender.com
+# (Render adds a few letters if that name is already taken).
+# Every merge into main deploys the site again by itself.
+#
+# The data (applications AND documents) lives in Neon (free PostgreSQL), not
+# on Render: Render's free plan forgets its files every time it restarts.
+services:
+  - type: web
+    name: hire-wire
+    runtime: python  # the version comes from the .python-version file
+    plan: free  # sleeps after 15 quiet minutes; the next visit wakes it up (about 30-50 s)
+    region: singapore  # close to the Philippines, and to Neon's Singapore database
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    # First upgrade-db runs the Alembic migrations (it keeps all data, and does
+    # nothing when the tables are up to date). Then gunicorn calls create_app()
+    # to build the app and serves it on Render's port.
+    startCommand: flask --app hirewire upgrade-db && gunicorn "hirewire:create_app()" --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      # Signs the login cookie. Render makes a long random one for us.
+      - key: SECRET_KEY
+        generateValue: true
+      # Encrypts Gmail app passwords. Render makes this one too. If it ever
+      # changes, people must connect Gmail again (nothing else is lost).
+      - key: ENCRYPTION_KEY
+        generateValue: true
+      # Neon's connection string (postgresql://...). Render asks for it when
+      # you make the Blueprint; it is never written in this file.
+      - key: DATABASE_URL
+        sync: false

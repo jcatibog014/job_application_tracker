@@ -17,7 +17,7 @@ from datetime import timedelta
 import click
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, session, url_for
 from flask.cli import with_appcontext
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -42,6 +42,9 @@ LOCK_TIME = timedelta(minutes=15)
 # Letters and digits that can't be mixed up when copied by hand (no 0/O, 1/I/L).
 RECOVERY_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 RECOVERY_LENGTH = 16
+
+DEMO_LIFETIME = timedelta(hours=2)
+MAX_DEMOS = 300  # demo accounts alive at once, so a script can't fill the database
 
 WRONG_LOGIN = "Wrong username or password."
 WRONG_RECOVERY = "Wrong username or recovery code."
@@ -315,6 +318,32 @@ def forgot():
             log_in(user)
             return show_recovery_code(code, "forgot")
     return render_template("forgot.html", errors=errors, username=username), 400 if errors else 200
+
+
+@bp.post("/demo")
+def demo():
+    """A fresh sample account for this visitor alone, deleted after DEMO_LIFETIME.
+    Nobody sees anyone else's changes, and the next visitor starts clean."""
+    s = db.session()
+    moment = utcnow()
+    if g.user is not None and g.user.is_demo:
+        return redirect(url_for("dashboard.index"))  # this browser already has one
+    # Old demos go first. Deleting the user deletes everything in it (ON DELETE CASCADE).
+    s.execute(delete(User).where(User.is_demo.is_(True), User.demo_expires_at < moment)
+              .execution_options(synchronize_session=False))
+    s.commit()
+    if s.scalar(select(func.count()).select_from(User).where(User.is_demo.is_(True))) >= MAX_DEMOS:
+        flash("The demo is very busy right now. Please try again in a little while.")
+        return redirect(url_for("auth.login"))
+    from . import seed
+    # Nobody knows this password: a demo account is only opened with the button.
+    user, _ = create_user(s, f"demo-{secrets.token_hex(4)}", secrets.token_urlsafe(32), is_demo=True)
+    user.demo_expires_at = moment + DEMO_LIFETIME
+    seed.fill(s, user, moment)
+    s.commit()
+    log_in(user)
+    flash("Welcome to the demo! This sample job hunt is yours for 2 hours, so try anything.")
+    return redirect(url_for("dashboard.index"))
 
 
 @bp.post("/logout")
