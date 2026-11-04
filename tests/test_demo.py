@@ -45,7 +45,9 @@ def test_try_demo_makes_a_sample_account(app, demo):
     stages = {stage for (stage,) in db_rows(app, select(Application.stage).where(Application.user_id == user.id))}
     assert stages == set(ACTIVE_STAGES) | set(CLOSED_STAGES)  # every stage has an example
     page = demo.get("/dashboard/").data
-    assert b"You are in the demo" in page and b"Welcome to the demo" in page
+    assert b"Demo account." in page and b"Welcome to the demo" in page
+    # A thin note that JavaScript lets you close (the button is hidden without it).
+    assert b'data-demo-close aria-label="Hide this note" hidden' in page
 
 
 def db_rows(app, query):

@@ -17,6 +17,8 @@
   --accent: #0f766e;
   --accent-strong: #115e59;
   --accent-soft: #e3f3f0;
+  --accent-hover: #0b4f4a;  /* darker than the button, so hover is easy to see */
+  --accent-ring: rgb(15 118 110 / .22);
   --on-accent: #ffffff;
   --danger: #b42318;
   --danger-soft: #fdecea;
@@ -57,6 +59,8 @@
     --accent: #2dd4bf;
     --accent-strong: #5eead4;
     --accent-soft: #123532;
+    --accent-hover: #99f6e4;  /* lighter than the bright button in dark mode */
+    --accent-ring: rgb(45 212 191 / .28);
     --on-accent: #0b1f1d;
     --danger: #f97066;
     --danger-soft: #3a1d1b;
@@ -89,6 +93,8 @@
   --accent: #2dd4bf;
   --accent-strong: #5eead4;
   --accent-soft: #123532;
+  --accent-hover: #99f6e4;
+  --accent-ring: rgb(45 212 191 / .28);
   --on-accent: #0b1f1d;
   --danger: #f97066;
   --danger-soft: #3a1d1b;
@@ -174,7 +180,11 @@ img { max-width: 100%; height: auto; display: block; }
 .flashes { margin: 0 0 1rem; }
 .flash { margin: 0 0 .5rem; padding: .7rem 1rem; background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: var(--radius-small); }
 .flash-error { background: var(--danger-soft); border-left-color: var(--danger); }
-.demo-note { margin: 0 0 1rem; padding: .5rem 1rem; border-radius: var(--radius-small); background: var(--surface); border: 1px solid var(--rule); color: var(--ink-soft); font-size: .9rem; }
+/* The demo's note: one thin line, closable (app.js), in full ink so it reads in both themes. */
+.demo-note { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin: -.75rem 0 1rem; padding: .25rem .4rem .25rem .8rem; border-radius: var(--radius-small); background: var(--accent-soft); color: var(--ink); font-size: .85rem; }
+.demo-note p { margin: 0; }
+.demo-close { flex: none; width: 1.75rem; height: 1.75rem; padding: 0; background: none; border: 0; border-radius: 50%; color: var(--ink-soft); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.demo-close:hover { background: var(--surface); color: var(--ink); }
 
 /* ---------- Cards ---------- */
 
@@ -238,7 +248,9 @@ img { max-width: 100%; height: auto; display: block; }
   white-space: nowrap;
   cursor: pointer;
 }
-.button:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-accent); }
+/* Hover is a clearly different shade plus a soft ring, so it's obvious what will be pressed. */
+.button:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+.button:active { transform: translateY(1px); box-shadow: none; }
 .button-quiet { background: var(--surface); color: var(--ink); border-color: var(--rule-strong); font-weight: 500; }
 .button-quiet:hover { background: var(--surface-soft); color: var(--accent); border-color: var(--accent); }
 .button-danger { background: var(--surface); color: var(--danger); border-color: var(--danger); font-weight: 500; }
@@ -289,7 +301,8 @@ img { max-width: 100%; height: auto; display: block; }
 .nav-links { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
 .nav-links a { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .5rem .75rem; border-radius: var(--radius-small); color: var(--ink); text-decoration: none; }
 .nav-links a:hover { background: var(--surface-soft); color: var(--accent); }
-.nav-links a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; }
+/* The page you're on: a pale tint, dark teal text, and a teal edge (so it isn't colour alone). */
+.nav-links a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-strong); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
 .nav-links-end { margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--rule); }
 .badge { min-width: 1.5rem; padding: 0 .45rem; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: .78rem; font-weight: 700; line-height: 1.5rem; text-align: center; }
 .sidebar-foot { padding-top: 1rem; border-top: 1px solid var(--rule); font-size: .95rem; }
