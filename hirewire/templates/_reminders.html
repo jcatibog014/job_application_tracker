@@ -1,5 +1,5 @@
 {# Rows for follow-ups and interviews, used on the Dashboard, the Schedule and an application's page. #}
-{% from "_macros.html" import csrf, pencil_icon %}
+{% from "_macros.html" import csrf, outside_link, pencil_icon %}
 
 {% macro due_words(day, today) -%}
   {%- if day < today -%}Overdue · {{ day|short_day }}
@@ -51,7 +51,7 @@
         <p class="muted small">
           {%- if interview.with_whom %}With {{ interview.with_whom }}{% endif -%}
           {%- if interview.with_whom and interview.place %} · {% endif -%}
-          {%- if interview.place_is_link %}<a href="{{ interview.place }}" target="_blank" rel="noopener noreferrer nofollow">Join link</a>{% elif interview.place %}{{ interview.place }}{% endif -%}
+          {%- if interview.place_is_link %}{{ outside_link(interview.place, 'Join link') }}{% elif interview.place %}{{ interview.place }}{% endif -%}
         </p>
       {% endif %}
     </div>

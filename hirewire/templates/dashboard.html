@@ -16,11 +16,14 @@
   {% else %}
     <ul class="stat-row" aria-label="Applications by stage">
       {% for stage in active_stages %}
-        <li><a class="stat" href="{{ url_for('applications.index', stage=stage) }}">
+        {% set count = counts.get(stage, 0) %}
+        <li><a class="stat" href="{{ url_for('applications.index', stage=stage) }}"
+               aria-label="{{ STAGE_LABELS[stage] }}: {{ count }}. Show {{ 'it' if count == 1 else 'them' }} on the Applications page">
           <span class="stat-number">{{ counts.get(stage, 0) }}</span>{{ stage_pill(stage) }}
         </a></li>
       {% endfor %}
-      <li><a class="stat" href="{{ url_for('applications.index', stage=closed_stages|list) }}">
+      <li><a class="stat" href="{{ url_for('applications.index', stage=closed_stages|list) }}"
+             aria-label="Closed: {{ closed_count }}. Show them on the Applications page">
         <span class="stat-number">{{ closed_count }}</span><span class="stage stage-closed">Closed</span>
       </a></li>
     </ul>

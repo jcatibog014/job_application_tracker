@@ -14,6 +14,7 @@
   --ink-soft: #5b6878;
   --rule: #dde3ea;
   --rule-strong: #c3ccd6;
+  --control-border: #7c8a9b;  /* outlined buttons: 3.5:1 on white, so they never look switched off */
   --accent: #0f766e;
   --accent-strong: #115e59;
   --accent-soft: #e3f3f0;
@@ -56,6 +57,7 @@
     --ink-soft: #9aa8b7;
     --rule: #2b3644;
     --rule-strong: #3b4858;
+    --control-border: #738398;  /* 4.2:1 on a dark card */
     --accent: #2dd4bf;
     --accent-strong: #5eead4;
     --accent-soft: #123532;
@@ -90,6 +92,7 @@
   --ink-soft: #9aa8b7;
   --rule: #2b3644;
   --rule-strong: #3b4858;
+  --control-border: #738398;
   --accent: #2dd4bf;
   --accent-strong: #5eead4;
   --accent-soft: #123532;
@@ -251,13 +254,15 @@ img { max-width: 100%; height: auto; display: block; }
 /* Hover is a clearly different shade plus a soft ring, so it's obvious what will be pressed. */
 .button:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 .button:active { transform: translateY(1px); box-shadow: none; }
-.button-quiet { background: var(--surface); color: var(--ink); border-color: var(--rule-strong); font-weight: 500; }
+.button-quiet { background: var(--surface); color: var(--ink); border-color: var(--control-border); font-weight: 500; }
 .button-quiet:hover { background: var(--surface-soft); color: var(--accent); border-color: var(--accent); }
 .button-danger { background: var(--surface); color: var(--danger); border-color: var(--danger); font-weight: 500; }
 .button-danger:hover { background: var(--danger); border-color: var(--danger); color: #fff; }
 .button-small { min-height: 2rem; padding: 0 .7rem; font-size: .88rem; }
 .button:disabled { opacity: .45; pointer-events: none; }
 .button-icon { width: var(--control-height); padding: 0; }
+/* After a link that opens another site in a new tab. */
+.outside-icon { display: inline-block; margin-left: .2em; vertical-align: -.05em; }
 .link-button { padding: 0; background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; }
 .link-button:hover { text-decoration: underline; }
 .inline-form { display: inline; margin: 0; }
@@ -540,11 +545,13 @@ img { max-width: 100%; height: auto; display: block; }
 .stat-row { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: .75rem; margin: 0 0 1.25rem; padding: 0; }
 .stat { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; height: 100%; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; }
 .stat:hover { border-color: var(--accent); color: var(--ink); }
+.stat .stage { font-size: .9rem; padding: .15rem .7rem; }
 .stat-number { font-family: var(--headline); font-size: 1.75rem; font-weight: 700; line-height: 1; }
 .stage-closed { background: var(--stage-saved-bg); color: var(--stage-saved-ink); }
 .activity-list { list-style: none; margin: 0; padding: 0; }
-.activity-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .1rem 1rem; padding: .55rem 0; border-bottom: 1px solid var(--rule); font-size: .93rem; }
+.activity-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .1rem 1rem; padding: .6rem 0; border-bottom: 1px solid var(--rule); font-size: 1rem; }
 .activity-list li:first-child { padding-top: 0; }
+.activity-list .muted { font-size: .9rem; }
 .activity-list li:last-child { border-bottom: 0; padding-bottom: 0; }
 .activity-list a { color: var(--ink); font-weight: 600; text-decoration: none; }
 .activity-list a:hover { color: var(--accent); text-decoration: underline; }
@@ -564,7 +571,7 @@ img { max-width: 100%; height: auto; display: block; }
 .reminder-when { color: var(--ink-soft); font-size: .85rem; }
 .is-overdue .reminder-when { color: var(--danger); font-weight: 600; }
 .is-nudge .reminder-when { color: var(--warning-ink); }
-.reminder-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+.reminder-actions { display: flex; align-items: center; gap: .75rem; margin-left: auto; }
 .snooze { position: relative; }
 .snooze summary { list-style: none; }
 .snooze summary::-webkit-details-marker { display: none; }
