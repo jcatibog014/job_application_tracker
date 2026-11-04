@@ -12,6 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from . import companies, crypto, gmail, mail_rules, reminders, workflow
 from .dates import local_today
+from .formatting import local_day, nice_day, nice_time
 from .models import (
     APPLIED, CLOSED_STAGES, INTERVIEW, OFFER, REJECTED, SAVED, Application, Company, EmailSuggestion, GmailAccount,
     Interview, Note,
@@ -107,6 +108,24 @@ def describe(suggestion):
     if suggestion.kind == "rejection":
         return "Close it as Rejected." if job else "Choose the application this rejection is about."
     return "Move it to Offer." if job else "Choose the application this offer is about."
+
+
+def accepted_message(suggestion, job, created, when):
+    """The toast after Accept: exactly what changed."""
+    company = job.company.name
+    if suggestion.kind == "interview":
+        if when is not None:
+            day = local_day(when)
+            return (f"Interview with {company} added to your schedule: {day:%a}, {nice_day(day)} "
+                    f"at {nice_time(when)}.")
+        return f"{company} moved to Interview. Add the time on its page when you know it."
+    if suggestion.kind == "applied":
+        if created:
+            return f"Added {job.role_title} at {company}, as Applied."
+        return f"{company}: {job.role_title} is marked as Applied."
+    if suggestion.kind == "rejection":
+        return f"{company}: closed as Rejected. On to the next one."
+    return f"{company}: moved to Offer. Congratulations!"
 
 
 def accept(s, suggestion, user, moment, job=None, when=None, role=""):

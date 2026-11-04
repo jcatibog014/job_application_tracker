@@ -308,6 +308,26 @@ def test_accept_an_interview_as_a_new_application(app, me, user_id, monkeypatch,
     assert thank_you.due_on == date(2026, 11, 13)
 
 
+def test_accept_says_exactly_what_changed(app, me, user_id, monkeypatch, fake_gmail):
+    connect(me, monkeypatch)
+    me.get("/email-suggestions/")
+    second = suggestion_rows(app)[1]
+    response = post(me, f"/email-suggestions/{second.id}/accept",
+                    {"application": "new", "role": "Analyst", "when": "2026-11-12T15:00"}, follow_redirects=True)
+    page = response.get_data(as_text=True)
+    assert "Interview with Globe added to your schedule: Thu, Nov 12, 2026 at 3:00 PM." in page
+    assert 'class="flash"' in page and "data-stays" not in page  # good news: a toast that fades
+
+
+def test_a_problem_message_stays_until_closed(app, ctx, me, user_id):
+    suggestions.add_from_raw(ctx, ctx.get(User, user_id), [raw_email("Update", "Unfortunately, we are not moving forward.")],
+                             utcnow())
+    ctx.commit()
+    row_id = suggestion_rows(app)[0].id
+    page = post(me, f"/email-suggestions/{row_id}/accept", {"application": "new"}, follow_redirects=True).get_data(as_text=True)
+    assert 'class="flash flash-error" data-flash data-stays' in page
+
+
 def test_a_rejection_needs_an_application(app, ctx, me, user_id):
     job_id = add_job(app, user_id, "Acme", stage="interview")
     raws = [raw_email("Update on your application", "Unfortunately, we are not moving forward.")]

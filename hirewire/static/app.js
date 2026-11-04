@@ -61,6 +61,28 @@ function setUpConfirm() {
   });
 }
 
+// Messages float as toasts. Good news fades after 6 seconds (not while pointed at or
+// focused); a problem stays until closed, so nobody misses it.
+function setUpToasts() {
+  document.querySelectorAll("[data-flash]").forEach((toast) => {
+    const close = toast.querySelector("[data-flash-close]");
+    close.hidden = false;
+    const leave = () => {
+      toast.classList.add("is-leaving");
+      setTimeout(() => toast.remove(), 300);
+    };
+    close.addEventListener("click", leave);
+    if ("stays" in toast.dataset) return;
+    let timer = setTimeout(leave, 6000);
+    const pause = () => clearTimeout(timer);
+    const resume = () => { clearTimeout(timer); timer = setTimeout(leave, 3000); };
+    toast.addEventListener("mouseenter", pause);
+    toast.addEventListener("focusin", pause);
+    toast.addEventListener("mouseleave", resume);
+    toast.addEventListener("focusout", resume);
+  });
+}
+
 // "Copy" buttons next to a recovery code or a calendar link.
 function setUpCopy() {
   document.querySelectorAll("[data-copy-button]").forEach((button) => {
@@ -241,6 +263,7 @@ function setUpDemoNote() {
 }
 
 setUpTheme();
+setUpToasts();
 setUpDemoNote();
 setUpMenu();
 setUpUserMenu();

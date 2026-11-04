@@ -133,7 +133,7 @@ def add_follow_up(job_id):
     due_on, note, errors = read_follow_up(request.form)
     if errors:
         for problem in errors.values():
-            flash(problem)
+            flash(problem, "error")
     else:
         db.session().add(FollowUp(application=job, due_on=due_on, note=note, created_at=utcnow()))
         db.session().commit()
@@ -218,7 +218,7 @@ def mark_no_reply(job_id):
         workflow.move(s, job, NO_REPLY, g.user, utcnow(), note="No reply after waiting")
     except workflow.MoveNotAllowed as problem:
         s.rollback()
-        flash(str(problem))
+        flash(str(problem), "error")
     else:
         s.commit()
         flash("Closed as No reply. If they answer later, you can move it back.")
