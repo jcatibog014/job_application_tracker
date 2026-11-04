@@ -8,6 +8,8 @@
   <link rel="icon" href="{{ url_for('static', filename='icon.svg') }}" type="image/svg+xml">
   <meta name="theme-color" content="#f3f5f7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#11161c" media="(prefers-color-scheme: dark)">
+  {# Before the stylesheet asks for it, so the name and headings don't jump when it arrives. #}
+  <link rel="preload" href="{{ url_for('static', filename='fonts/plus-jakarta-sans-700.woff2') }}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   {# Before the page draws, so a saved dark theme never flashes white. #}
   <script src="{{ url_for('static', filename='theme.js') }}"></script>

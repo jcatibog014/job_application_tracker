@@ -2,6 +2,10 @@
    and a coloured pill per stage (always with its name, never colour alone).
    Dark mode is defined twice (device setting + the choice in Settings): change both together. */
 
+/* Headings and the name: Plus Jakarta Sans, kept in static/fonts (see its README.txt). */
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/plus-jakarta-sans-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Plus Jakarta Sans"; src: url("fonts/plus-jakarta-sans-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
 :root {
   --bg: #f3f5f7;
   --surface: #ffffff;
@@ -33,6 +37,10 @@
   --radius: 8px;
   --radius-small: 6px;
   --ui: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --headline: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  /* The login panel: deeper than the buttons, so white text and the white logo tile stand out. */
+  --panel: #0b4f4a;
+  --panel-ink: #ffffff;
   --control-height: 2.6rem;
   color-scheme: light;
 }
@@ -55,6 +63,7 @@
     --warning-ink: #fbbf5a;
     --warning-soft: #3a2a12;
     --shadow: 0 1px 2px rgb(0 0 0 / .3);
+    --panel: #0b3b37;
     --stage-saved-bg: #26303b;      --stage-saved-ink: #c1ccd8;
     --stage-applied-bg: #1b2b4a;    --stage-applied-ink: #93b4ff;
     --stage-screening-bg: #2b2046;  --stage-screening-ink: #c4b0ff;
@@ -86,6 +95,7 @@
   --warning-ink: #fbbf5a;
   --warning-soft: #3a2a12;
   --shadow: 0 1px 2px rgb(0 0 0 / .3);
+  --panel: #0b3b37;
   --stage-saved-bg: #26303b;      --stage-saved-ink: #c1ccd8;
   --stage-applied-bg: #1b2b4a;    --stage-applied-ink: #93b4ff;
   --stage-screening-bg: #2b2046;  --stage-screening-ink: #c4b0ff;
@@ -119,7 +129,8 @@ body {
   overflow-wrap: break-word;
 }
 
-h1, h2, h3 { font-weight: 650; line-height: 1.2; margin: 0 0 .5em; letter-spacing: -.01em; }
+h1, h2, h3 { font-family: var(--headline); font-weight: 600; line-height: 1.2; margin: 0 0 .5em; letter-spacing: -.01em; }
+h1 { font-weight: 700; }
 h1 { font-size: 1.75rem; }
 h2 { font-size: 1.2rem; }
 h3 { font-size: 1.05rem; }
@@ -244,10 +255,12 @@ img { max-width: 100%; height: auto; display: block; }
 .welcome-layout .page { max-width: none; padding: 0; display: flex; }
 /* The green panel takes a third of the screen; the login card has the rest. */
 .welcome { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
-.welcome-panel { background: var(--accent); color: #fff; padding: clamp(2rem, 4vw, 4rem); }
-.welcome-panel .wordmark { color: #fff; gap: .75rem; font-size: 2.25rem; }
-.welcome-panel .wordmark .mark { width: 3.25rem; height: 3.25rem; color: rgb(255 255 255 / .18); }
-.welcome-line { font-size: clamp(1.5rem, 2.3vw, 2.4rem); font-weight: 650; line-height: 1.2; letter-spacing: -.015em; margin: 3rem 0 0; max-width: 16em; }
+.welcome-panel { background: var(--panel); color: var(--panel-ink); padding: clamp(2rem, 4vw, 4rem); }
+.welcome-panel .wordmark { color: var(--panel-ink); gap: .8rem; font-size: 2.4rem; }
+/* A solid white tile with a deep teal wire: it never melts into the panel. */
+.welcome-panel .wordmark .mark { width: 3.4rem; height: 3.4rem; color: #fff; --mark-wire: var(--panel); }
+.welcome-panel .wordmark:hover { color: var(--panel-ink); }
+.welcome-line { font-family: var(--headline); font-size: clamp(1.5rem, 2.3vw, 2.4rem); font-weight: 700; line-height: 1.2; letter-spacing: -.015em; margin: 3rem 0 0; max-width: 16em; }
 .welcome-cards { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 2rem 1rem; }
 .welcome-cards .card { width: 100%; max-width: 26rem; margin: 0; padding: 1.75rem; }
 .welcome-cards h1 { font-size: 1.6rem; }
@@ -264,9 +277,13 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* ---------- The sidebar ---------- */
 
-.wordmark { display: inline-flex; align-items: center; gap: .55rem; color: var(--ink); font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; text-decoration: none; }
+.wordmark { display: inline-flex; align-items: center; gap: .6rem; color: var(--ink); font-family: var(--headline); font-size: 1.4rem; font-weight: 700; letter-spacing: -.02em; text-decoration: none; }
 .wordmark:hover { color: var(--ink); }
-.wordmark .mark { color: var(--accent); flex: none; }
+/* The wire wears the same colour as button text: white on teal, dark on the bright dark-mode aqua. */
+.wordmark .mark { width: 2.1rem; height: 2.1rem; color: var(--accent); --mark-wire: var(--on-accent); flex: none; }
+/* The wire and its two dots: white on the tile, unless a place sets --mark-wire. */
+.mark .mark-wire { stroke: var(--mark-wire, #fff); }
+.mark .mark-dot { fill: var(--mark-wire, #fff); }
 .menu-button { height: var(--control-height); padding: 0 .9rem; background: var(--surface); color: var(--ink); border: 1px solid var(--rule-strong); border-radius: var(--radius-small); font: inherit; cursor: pointer; }
 .sidebar { background: var(--surface); }
 .nav-links { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; }
@@ -510,7 +527,7 @@ img { max-width: 100%; height: auto; display: block; }
 .stat-row { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr)); gap: .75rem; margin: 0 0 1.25rem; padding: 0; }
 .stat { display: flex; flex-direction: column; align-items: flex-start; gap: .35rem; height: 100%; padding: .85rem 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; }
 .stat:hover { border-color: var(--accent); color: var(--ink); }
-.stat-number { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.stat-number { font-family: var(--headline); font-size: 1.75rem; font-weight: 700; line-height: 1; }
 .stage-closed { background: var(--stage-saved-bg); color: var(--stage-saved-ink); }
 .activity-list { list-style: none; margin: 0; padding: 0; }
 .activity-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .1rem 1rem; padding: .55rem 0; border-bottom: 1px solid var(--rule); font-size: .93rem; }
