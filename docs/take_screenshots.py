@@ -74,9 +74,12 @@ def shoot_visitor_pages(browser):
 
 def shoot_page_parts(page):
     """Things that need a click or a scroll first."""
-    # The filters open, with a few chosen.
-    shoot(page, "filters.png", "/applications/?stage=applied&stage=screening&stage=interview&mode=hybrid"
-                               "&mode=onsite&sort=pay&order=desc")
+    # The filters open (the panel starts closed), with a few chosen.
+    page.goto(f"{BASE}/applications/?stage=applied&stage=screening&stage=interview&mode=hybrid&mode=onsite"
+              "&sort=pay&order=desc")
+    page.locator(".filter-toggle").click()
+    save(page, "filters.png")
+    page.locator(".filter-toggle").click()  # closed again, for the pictures after this one
     # The application page, further down: the follow-ups, people and the timeline.
     page.goto(f"{BASE}{job_address(page)}")
     page.locator("#timeline").scroll_into_view_if_needed()

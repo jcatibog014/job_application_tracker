@@ -10,6 +10,7 @@
   --bg: #f3f5f7;
   --surface: #ffffff;
   --surface-soft: #f7f9fa;
+  --row-hover: #e8f1f0;  /* a table row under the pointer */
   --ink: #1d2733;
   --ink-soft: #5b6878;
   --rule: #dde3ea;
@@ -53,6 +54,7 @@
     --bg: #11161c;
     --surface: #19212a;
     --surface-soft: #1d2631;
+    --row-hover: #273745;
     --ink: #e6ebf0;
     --ink-soft: #9aa8b7;
     --rule: #2b3644;
@@ -88,6 +90,7 @@
   --bg: #11161c;
   --surface: #19212a;
   --surface-soft: #1d2631;
+  --row-hover: #273745;
   --ink: #e6ebf0;
   --ink-soft: #9aa8b7;
   --rule: #2b3644;
@@ -387,14 +390,22 @@ img { max-width: 100%; height: auto; display: block; }
 .table td { padding: .75rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: 0; }
 .table tbody tr { position: relative; }
-.table tbody tr:hover { background: var(--surface-soft); }
+.table tbody tr:hover td { background: var(--row-hover); }
+.table tbody tr[data-href] { cursor: pointer; }  /* app.js opens the row's page on a click anywhere */
+.table tbody tr[data-href]:hover .col-job { box-shadow: inset 3px 0 0 var(--accent), 1px 0 0 var(--rule); }
 .table th a { color: inherit; text-decoration: none; }
 .table th a:hover { color: var(--accent); }
+.table th a[aria-current] { color: var(--ink); }
+.th-sep { color: var(--rule-strong); }
+/* The job column stays on the left when a narrow screen scrolls the table sideways. */
+.table .col-job { position: sticky; left: 0; z-index: 1; min-width: 13rem; background: var(--surface); box-shadow: 1px 0 0 var(--rule); }
+.table thead .col-job { background: var(--surface-soft); z-index: 2; }
+.job-company { display: block; color: var(--ink-soft); font-size: .86rem; }
 .table .num { text-align: right; white-space: nowrap; }
 .row-link { color: var(--ink); font-weight: 600; text-decoration: none; }
 .row-link:hover { color: var(--accent); text-decoration: underline; }
 /* The title's link covers the whole row or card, so anywhere opens it. */
-.table .row-link::after, .company-card .row-link::after { content: ""; position: absolute; inset: 0; }
+.company-card .row-link::after { content: ""; position: absolute; inset: 0; }
 .row-list { list-style: none; margin: 0; padding: 0; }
 .row-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: .3rem 1rem; padding: .65rem 0; border-bottom: 1px solid var(--rule); }
 .row-list li:first-child { padding-top: 0; }
@@ -496,11 +507,24 @@ img { max-width: 100%; height: auto; display: block; }
 .view-delete { width: 1.5rem; height: 1.5rem; padding: 0; background: none; border: 0; border-radius: 50%; color: var(--ink-soft); font-size: 1.1rem; line-height: 1; cursor: pointer; }
 .view-delete:hover { background: var(--danger-soft); color: var(--danger); }
 .filter-card { padding: 1rem 1.25rem; }
+/* One row: [search icon | words ......... Filters (2)] [Search]. The Filters button is the
+   panel's <summary>, placed inside the search box so the card stays one line tall. */
+.filter-card { position: relative; --search-button: 6.5rem; }
 .filter-row { display: flex; gap: .6rem; }
-.filter-row .control { flex: 1; min-width: 0; }
-.filter-more { margin-top: .75rem; }
-.filter-more summary { width: max-content; cursor: pointer; color: var(--accent); font-size: .92rem; font-weight: 600; }
-.filter-more[open] summary { margin-bottom: 1rem; }
+.filter-row > .button { flex: none; width: var(--search-button); }
+.search-box { position: relative; flex: 1; min-width: 0; }
+.search-box .control { width: 100%; padding-left: 2.35rem; padding-right: 7.5rem; }
+.search-icon { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
+.filter-toggle { position: absolute; top: calc(1rem + .3rem); right: calc(1.25rem + var(--search-button) + .6rem + .3rem); height: calc(var(--control-height) - .6rem);
+  display: inline-flex; align-items: center; gap: .4rem; padding: 0 .6rem; border-radius: var(--radius-small); color: var(--ink); font-size: .9rem; font-weight: 600; list-style: none; cursor: pointer; }
+.filter-toggle::-webkit-details-marker { display: none; }
+.filter-toggle:hover, .filter-more[open] .filter-toggle { background: var(--accent-soft); color: var(--accent-strong); }
+.filter-toggle .badge { min-width: 1.3rem; line-height: 1.3rem; font-size: .72rem; }
+.filter-more[open] > .filter-grid { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+@container main (max-width: 36rem) {
+  .filter-toggle-word { display: none; }
+  .search-box .control { padding-right: 4.5rem; }
+}
 .filter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr)); gap: 1rem 1.25rem; margin-bottom: 1rem; }
 .filter-grid .span-all { grid-column: 1 / -1; }
 .filter-group { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: .5rem; }
@@ -533,6 +557,9 @@ img { max-width: 100%; height: auto; display: block; }
   .table.as-cards td { padding: 0; border: 0; }
   .table.as-cards td:empty { display: none; }
   .table.as-cards .col-company { order: 1; flex: 1 1 0; color: var(--ink-soft); font-size: .85rem; }
+  /* The title takes the first line beside the stage, so the details wrap below instead of squeezing it. */
+  .table.as-cards .col-job { order: 1; flex: 1 1 calc(100% - 7.5rem); position: static; min-width: 0; background: none; box-shadow: none; }
+  .table.as-cards tbody tr[data-href]:hover .col-job { box-shadow: none; }
   .table.as-cards .col-stage { order: 2; }
   .table.as-cards .col-title { order: 3; flex-basis: 100%; }
   .table.as-cards .col-meta { order: 4; color: var(--ink-soft); font-size: .85rem; text-align: left; }

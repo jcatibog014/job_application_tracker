@@ -143,6 +143,21 @@ def test_paging(app, me, user_id):
     assert titles(me, "?sort=company&order=asc&page=99") == ["Job 25", "Job 26", "Job 27"]  # the last page
 
 
+def test_rows_open_their_page_and_show_the_company_under_the_title(app, me, jobs):
+    page = me.get("/applications/").get_data(as_text=True)
+    row = re.search(r'<tr data-href="(/applications/\d+)">\s*<td class="col-job"><a class="row-link" href="([^"]+)">'
+                    r'Data Analyst</a><span class="job-company">Acme</span>', page)
+    assert row and row.group(1) == row.group(2)
+
+
+def test_the_filter_panel_stays_closed_and_counts_the_filters(me, jobs):
+    page = me.get("/applications/?stage=applied&mode=hybrid").get_data(as_text=True)
+    assert '<details class="filter-more" data-filter-panel>' in page  # closed: the chips show what's on
+    assert '<span class="badge">2<span class="visually-hidden"> in use</span>' in page
+    # One header holds both the title and the company sort links.
+    assert "sort=role" in page and "sort=company" in page
+
+
 def test_empty_results_say_why(me, jobs):
     page = me.get("/applications/?q=astronaut").data
     assert b"No Matching Applications" in page and b"Clear all" in page

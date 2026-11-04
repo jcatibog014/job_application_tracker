@@ -88,6 +88,42 @@ function setUpFilters() {
   form.addEventListener("change", (event) => {
     if (event.target.matches("input[type=checkbox], select")) form.requestSubmit();
   });
+  // Empty fields stay out of the address, so a bookmarked filter is short: ?stage=interview,
+  // not ?q=&stage=interview&source=&location=... (a disabled field isn't sent).
+  form.addEventListener("submit", () => {
+    form.querySelectorAll("input[name], select[name]").forEach((field) => {
+      if (field.type !== "checkbox" && field.value === "") field.disabled = true;
+    });
+  });
+}
+
+// A click anywhere on a row opens its page (the title is the real link, for keyboards).
+function setUpRowLinks() {
+  document.querySelectorAll("tr[data-href]").forEach((row) => {
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("a, button, input, select, label")) return;
+      if (String(getSelection())) return;  // selecting text to copy isn't a click to open
+      location.href = row.dataset.href;
+    });
+  });
+}
+
+// The filter panel stays open while you tick boxes (each tick reloads the page).
+function setUpFilterPanel() {
+  const panel = document.querySelector("[data-filter-panel]");
+  if (!panel) return;
+  try {
+    if (sessionStorage.getItem("hirewire-filters-open") === "yes") panel.open = true;
+  } catch (error) {
+    // Storage can be blocked. The panel just starts closed.
+  }
+  panel.addEventListener("toggle", () => {
+    try {
+      sessionStorage.setItem("hirewire-filters-open", panel.open ? "yes" : "no");
+    } catch (error) {
+      // Nothing to remember it in.
+    }
+  });
 }
 
 // ---------- The Board ----------
@@ -210,4 +246,6 @@ setUpUserMenu();
 setUpConfirm();
 setUpCopy();
 setUpFilters();
+setUpFilterPanel();
+setUpRowLinks();
 setUpBoard();
