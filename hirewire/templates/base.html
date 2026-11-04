@@ -27,10 +27,17 @@
         <button class="demo-close" type="button" data-demo-close aria-label="Hide this note" hidden>&times;</button>
       </div>
     {% endif %}
-    {% with messages = get_flashed_messages() %}
+    {# Messages after an action. With JavaScript they float as toasts (app.js): good news fades
+       after a few seconds, a problem ("error") stays until closed. Without it, they sit here. #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div class="flashes" role="status">
-          {% for message in messages %}<p class="flash">{{ message }}</p>{% endfor %}
+        <div class="flashes" role="status" data-flashes>
+          {% for category, message in messages %}
+            <div class="flash{% if category == 'error' %} flash-error{% endif %}" data-flash{% if category == 'error' %} data-stays{% endif %}>
+              <p>{{ message }}</p>
+              <button class="flash-close" type="button" data-flash-close aria-label="Close this message" hidden>&times;</button>
+            </div>
+          {% endfor %}
         </div>
       {% endif %}
     {% endwith %}

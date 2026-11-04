@@ -76,7 +76,7 @@ def save_view():
     name, problem = forms.text(request.form, "name", filters.VIEW_NAME_LIMIT, required=True, label="A name")
     query = filters.view_query(MultiDict(parse_qsl(request.form.get("query", ""))))
     if problem:
-        flash(problem)
+        flash(problem, "error")
         return redirect(url_for("applications.index") + ("?" + query if query else ""))
     view = s.scalar(mine(SavedView).where(SavedView.name == name))
     if view is None:
@@ -184,7 +184,7 @@ def move(job_id):
         s.rollback()
         if wants_json():
             return jsonify(error=str(problem)), 409
-        flash(str(problem))
+        flash(str(problem), "error")
     else:
         s.commit()
         if wants_json():
@@ -228,7 +228,7 @@ def add_note(job_id):
     job = get_job(job_id)
     body, problem = forms.text(request.form, "body", 5000, required=True, label="A note")
     if problem:
-        flash(problem)
+        flash(problem, "error")
     else:
         moment = utcnow()
         db.session().add(Note(application=job, body=body, created_at=moment))

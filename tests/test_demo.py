@@ -172,8 +172,19 @@ def test_each_stat_card_opens_its_applications(demo):
     assert "6 applications" in closed
 
 
-def test_join_links_open_in_a_new_tab(demo):
-    page = demo.get("/dashboard/").get_data(as_text=True)
+def test_interviews_offer_join_call_and_details_not_done(demo):
+    for url in ("/dashboard/", "/schedule/"):
+        page = demo.get(url).get_data(as_text=True)
+        row = re.search(r'<li class="interview-row">.*?</li>', page, re.DOTALL).group(0)
+        join = re.search(r'<a class="button button-small" href="https://meet[^"]+"[^>]*>Join call.*?</a>', row, re.DOTALL)
+        assert join and 'target="_blank"' in join.group(0) and "noopener" in join.group(0)
+        assert "(opens in a new tab)" in join.group(0)
+        assert ">Details</a>" in row and ">Done<" not in row
+
+
+def test_join_links_open_in_a_new_tab(app, demo):
+    job_id = db_rows(app, select(Application.id).where(Application.role_title == "Junior Data Analyst"))[0][0]
+    page = demo.get(f"/applications/{job_id}").get_data(as_text=True)
     join = re.search(r'<a href="https://meet[^"]+"[^>]*>Join link.*?</a>', page, re.DOTALL).group(0)
     assert 'target="_blank"' in join and "noopener" in join and "(opens in a new tab)" in join
 

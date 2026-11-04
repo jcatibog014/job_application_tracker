@@ -64,7 +64,7 @@ def check_now():
         return redirect(url_for("settings.index") + "#gmail")
     added, problem = run_check(utcnow())
     if problem:
-        flash(problem)
+        flash(problem, "error")
     else:
         flash(f"Found {added} new {'suggestion' if added == 1 else 'suggestions'}." if added else "No new job emails.")
     return redirect(url_for("inbox.index"))
@@ -85,24 +85,24 @@ def accept(suggestion_id):
     choice = request.form.get("application", "")
     job = get_mine(Application, int(choice)) if choice.isdigit() else None
     if job is None and choice != "new":
-        flash("Choose an application, or New application.")
+        flash("Choose an application, or New application.", "error")
         return redirect(url_for("inbox.index"))
     when = None
     if suggestion.kind == "interview" and request.form.get("when"):
         try:
             when = parse_local(request.form["when"], g.user.timezone)
         except ValueError:
-            flash("Use a date and time like 2026-11-12 14:00.")
+            flash("Use a date and time like 2026-11-12 14:00.", "error")
             return redirect(url_for("inbox.index"))
     try:
         job = suggestions.accept(s, suggestion, g.user, utcnow(), job=job, when=when,
                                  role=request.form.get("role", "").strip())
     except suggestions.SuggestionProblem as problem:
         s.rollback()
-        flash(str(problem))
+        flash(str(problem), "error")
         return redirect(url_for("inbox.index"))
     s.commit()
-    flash(f"Done: {job.role_title} at {job.company.name} is up to date.")
+    flash(suggestions.accepted_message(suggestion, job, created=choice == "new", when=when))
     return redirect(auth.safe_next(request.form.get("next"), url_for("inbox.index")))
 
 

@@ -47,12 +47,19 @@
       {% if show_job %}
         <a class="reminder-job" href="{{ url_for('applications.detail', job_id=interview.application.id) }}#interviews">{{ interview.application.company.name }} · {{ interview.application.role_title }}</a>
       {% endif %}
-      {% if interview.with_whom or interview.place %}
+      {% if interview.with_whom or (interview.place and not interview.place_is_link) %}
         <p class="muted small">
           {%- if interview.with_whom %}With {{ interview.with_whom }}{% endif -%}
-          {%- if interview.with_whom and interview.place %} · {% endif -%}
-          {%- if interview.place_is_link %}{{ outside_link(interview.place, 'Join link') }}{% elif interview.place %}{{ interview.place }}{% endif -%}
+          {%- if interview.with_whom and interview.place and not interview.place_is_link %} · {% endif -%}
+          {%- if interview.place and not interview.place_is_link %}{{ interview.place }}{% endif -%}
         </p>
+      {% endif %}
+    </div>
+    {# An interview isn't "done" like a follow-up: what you want is to join it, or see its notes. #}
+    <div class="reminder-actions">
+      <a class="button button-quiet button-small" href="{{ url_for('applications.detail', job_id=interview.application.id) }}#interviews">Details</a>
+      {% if interview.place_is_link %}
+        <a class="button button-small" href="{{ interview.place }}" target="_blank" rel="noopener noreferrer nofollow">Join call<span class="visually-hidden"> (opens in a new tab)</span></a>
       {% endif %}
     </div>
   </li>

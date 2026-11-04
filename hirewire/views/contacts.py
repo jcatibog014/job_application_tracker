@@ -114,7 +114,7 @@ def link(job_id):
     job = get_mine(Application, job_id)
     contact_id = request.form.get("contact_id", "")
     if not contact_id.isdigit():
-        flash("Choose a person from the list.")
+        flash("Choose a person from the list.", "error")
         return redirect(url_for("applications.detail", job_id=job.id) + "#people")
     contact = get_mine(Contact, int(contact_id))
     role = request.form.get("role") if request.form.get("role") in CONTACT_ROLES else "other"
