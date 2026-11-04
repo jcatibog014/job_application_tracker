@@ -12,7 +12,7 @@
       <h2 class="table-title">{{ label }}{{ 's' if label != 'Other' }}</h2>
       <div class="table-scroll">
         <table class="table as-cards">
-          <thead><tr><th>Name</th><th>Version</th><th>File</th><th>Added</th><th class="num">Used in</th><th><span class="visually-hidden">Edit</span></th></tr></thead>
+          <thead><tr><th>Name</th><th>Version</th><th>File</th><th>Added</th><th class="num">Used in</th><th><span class="visually-hidden">Download and edit</span></th></tr></thead>
           <tbody>
             {% for doc in files %}
               <tr>
@@ -21,7 +21,10 @@
                 <td class="col-meta muted">{{ doc.filename.rsplit('.', 1)[1]|upper }} · {{ size_words(doc.size) }}</td>
                 <td class="col-meta muted">{{ doc.created_at|nice_date }}</td>
                 <td class="col-meta num">{% set count = used.get(doc.id, 0) %}{{ count }} {{ 'application' if count == 1 else 'applications' }}</td>
-                <td class="col-stage"><a class="icon-link" href="{{ url_for('documents.edit', document_id=doc.id) }}" aria-label="Edit {{ doc.name }}">{{ pencil_icon() }}</a></td>
+                <td class="col-stage doc-actions">
+                  <a class="icon-link" href="{{ url_for('documents.download', document_id=doc.id) }}" aria-label="Download {{ doc.title }}" title="Download"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg></a>
+                  <a class="icon-link" href="{{ url_for('documents.edit', document_id=doc.id) }}" aria-label="Edit {{ doc.title }}" title="Edit">{{ pencil_icon() }}</a>
+                </td>
               </tr>
             {% endfor %}
           </tbody>

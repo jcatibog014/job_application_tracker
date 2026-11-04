@@ -26,7 +26,7 @@
         <h2>Time Zone</h2>
         <p>Interview times, reminders and "today" follow this place.</p>
       </div>
-      <form method="post">
+      <form method="post" data-watch-changes>
         {{ csrf() }}
         <input type="hidden" name="action" value="timezone">
         <fieldset class="stack plain-fieldset" {{ locked }}>
@@ -41,7 +41,7 @@
         <h2>Reminders</h2>
         <p>Hire Wire adds these follow-ups for you. They go away by themselves when they stop making sense.</p>
       </div>
-      <form method="post">
+      <form method="post" data-watch-changes>
         {{ csrf() }}
         <input type="hidden" name="action" value="reminders">
         <fieldset class="stack plain-fieldset" {{ locked }}>
@@ -73,7 +73,7 @@
             <li>Paste the link and press <strong>Add calendar</strong>. It shows on your phone too.</li>
           </ol>
           <div class="form-actions setting-account-actions">
-            <button class="button" type="button" data-copy-button hidden>Copy link</button>
+            <button class="button" type="button" data-copy-button data-copy-anywhere hidden>Copy link</button>
             <form method="post" data-confirm="Make a new link? The old one stops working, so calendars using it stop updating.">
               {{ csrf() }}<input type="hidden" name="action" value="calendar_on">
               <button class="button button-quiet" type="submit" {{ locked }}>Make a new link</button>

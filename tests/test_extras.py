@@ -145,6 +145,22 @@ def test_upload_download_and_use_a_document(app, me, user_id):
     assert documents(app) == [] and get_job(app, job_id).resume_id is None
 
 
+def test_each_file_has_a_download_button(app, me):
+    upload(me)
+    doc = documents(app)[0]
+    page = me.get("/documents/").get_data(as_text=True)
+    assert f'href="/documents/{doc.id}/file" aria-label="Download Résumé (v3)"' in page
+    assert 'aria-label="Edit Résumé (v3)"' in page
+
+
+def test_companies_show_their_letter(app, me, user_id):
+    job_id = add_job(app, user_id, "Initech")
+    company_id = get_job(app, job_id).company_id
+    badge = f'<span class="company-badge company-badge-{company_id % 6}" aria-hidden="true">I</span>'
+    assert badge in me.get("/companies/").get_data(as_text=True)
+    assert badge in me.get(f"/companies/{company_id}").get_data(as_text=True)
+
+
 def test_word_files_too(app, me):
     assert upload(me, DOCX, "cover.docx", kind="cover_letter").status_code == 302
     assert documents(app)[0].filename == "cover.docx"

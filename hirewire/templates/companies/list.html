@@ -17,7 +17,10 @@
     <ul class="company-grid">
       {% for company, count in rows %}
         <li class="card company-card">
-          <h2><a class="row-link" href="{{ url_for('companies.detail', company_id=company.id) }}">{{ company.name }}</a></h2>
+          <div class="company-card-head">
+            <span class="company-badge company-badge-{{ company.id % 6 }}" aria-hidden="true">{{ company.name[:1]|upper }}</span>
+            <h2><a class="row-link" href="{{ url_for('companies.detail', company_id=company.id) }}">{{ company.name }}</a></h2>
+          </div>
           <p class="muted small">{{ [company.industry, company.location]|select|join(' · ') or 'No details yet' }}</p>
           <p class="company-count">{{ count }} {{ 'application' if count == 1 else 'applications' }}</p>
         </li>

@@ -61,7 +61,7 @@ function setUpConfirm() {
   });
 }
 
-// Messages float as toasts. Good news fades after 6 seconds (not while pointed at or
+// Messages float as toasts. Good news fades after 5 seconds (not while pointed at or
 // focused); a problem stays until closed, so nobody misses it.
 function setUpToasts() {
   document.querySelectorAll("[data-flash]").forEach((toast) => {
@@ -73,7 +73,7 @@ function setUpToasts() {
     };
     close.addEventListener("click", leave);
     if ("stays" in toast.dataset) return;
-    let timer = setTimeout(leave, 6000);
+    let timer = setTimeout(leave, 5000);
     const pause = () => clearTimeout(timer);
     const resume = () => { clearTimeout(timer); timer = setTimeout(leave, 3000); };
     toast.addEventListener("mouseenter", pause);
@@ -83,11 +83,13 @@ function setUpToasts() {
   });
 }
 
-// "Copy" buttons next to a recovery code or a calendar link.
+// "Copy" buttons next to a recovery code or a calendar link. Where the browser has no
+// clipboard (an http address), the text is selected for Ctrl+C instead.
 function setUpCopy() {
   document.querySelectorAll("[data-copy-button]").forEach((button) => {
     const source = button.closest(".card, .setting").querySelector("[data-copy-text]");
-    if (!source || !navigator.clipboard) return;
+    if (!source) return;
+    if (!navigator.clipboard && !("copyAnywhere" in button.dataset)) return;
     button.hidden = false;
     const label = button.textContent;
     button.addEventListener("click", async () => {
@@ -95,10 +97,35 @@ function setUpCopy() {
         await navigator.clipboard.writeText(source.value || source.textContent.trim());
         button.textContent = "Copied";
       } catch (error) {
-        button.textContent = "Copy didn't work";
+        if (source.select) source.select();
+        button.textContent = "Selected: press Ctrl+C";
       }
-      setTimeout(() => { button.textContent = label; }, 2000);
+      setTimeout(() => { button.textContent = label; }, 2500);
     });
+  });
+}
+
+// Settings: each Save button looks asleep until its form has a change, then wakes up
+// and says so. It still works either way (and without JavaScript it is always awake).
+function setUpUnsavedChanges() {
+  document.querySelectorAll("form[data-watch-changes]").forEach((form) => {
+    const button = form.querySelector("button[type=submit]");
+    if (!button || button.closest("fieldset:disabled")) return;
+    const note = document.createElement("span");
+    note.className = "unsaved-note";
+    note.textContent = "Unsaved changes";
+    note.hidden = true;
+    button.before(note);
+    const snapshot = () => new URLSearchParams(new FormData(form)).toString();
+    const start = snapshot();
+    const update = () => {
+      const changed = snapshot() !== start;
+      button.classList.toggle("is-waiting", !changed);
+      note.hidden = !changed;
+    };
+    form.addEventListener("input", update);
+    form.addEventListener("change", update);
+    update();
   });
 }
 
@@ -269,6 +296,7 @@ setUpMenu();
 setUpUserMenu();
 setUpConfirm();
 setUpCopy();
+setUpUnsavedChanges();
 setUpFilters();
 setUpFilterPanel();
 setUpRowLinks();
