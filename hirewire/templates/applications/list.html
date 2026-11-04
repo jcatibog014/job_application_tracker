@@ -29,16 +29,24 @@
 
   <form class="card filter-card" method="get" action="{{ url_for('applications.index') }}" data-filters>
     <div class="filter-row">
-      <label class="visually-hidden" for="filter-q">Search</label>
-      <input id="filter-q" class="control" type="search" name="q" value="{{ f.q }}" maxlength="100"
-             placeholder="Search job titles, companies, notes and descriptions">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><line x1="15.5" y1="15.5" x2="20" y2="20"></line></svg>
+        <label class="visually-hidden" for="filter-q">Search</label>
+        <input id="filter-q" class="control" type="search" name="q" value="{{ f.q }}" maxlength="100"
+               placeholder="Search titles, companies, notes">
+      </div>
       {% if f.sort != 'updated' or f.order != 'desc' %}
         <input type="hidden" name="sort" value="{{ f.sort }}"><input type="hidden" name="order" value="{{ f.order }}">
       {% endif %}
       <button class="button" type="submit">Search</button>
     </div>
-    <details class="filter-more"{% if panel_count %} open{% endif %}>
-      <summary>More filters{% if panel_count %} ({{ panel_count }}){% endif %}</summary>
+    {# Closed until opened: the chips under the card already show which filters are on.
+       Its summary sits inside the search box (style.css); app.js remembers if it was open. #}
+    <details class="filter-more" data-filter-panel>
+      <summary class="filter-toggle">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line><circle cx="9" cy="7" r="2" fill="currentColor"></circle><circle cx="15" cy="12" r="2" fill="currentColor"></circle><circle cx="8" cy="17" r="2" fill="currentColor"></circle></svg>
+        <span class="filter-toggle-word">Filters</span>{% if panel_count %}<span class="badge">{{ panel_count }}<span class="visually-hidden"> in use</span></span>{% endif %}
+      </summary>
       <div class="filter-grid">
         <fieldset class="filter-group span-all">
           <legend>Stage</legend>
@@ -124,21 +132,25 @@
       <div class="table-scroll">
         <table class="table as-cards">
           <thead>
+            {% macro sort_header(column) -%}
+              {%- set current = f.sort == column -%}
+              <a href="{{ url_for('applications.index', **sort_link(f, column)) }}"{% if current %} aria-current="true"{% endif %}>{{ sorts[column] }}{% if current %} <span aria-hidden="true">{{ '↑' if f.order == 'asc' else '↓' }}</span><span class="visually-hidden"> ({{ 'ascending' if f.order == 'asc' else 'descending' }})</span>{% endif %}</a>
+            {%- endmacro %}
             <tr>
-              {% for column, label in sorts.items() %}
-                {% set current = f.sort == column %}
-                <th{% if column == 'pay' %} class="num"{% endif %}{% if current %} aria-sort="{{ 'ascending' if f.order == 'asc' else 'descending' }}"{% endif %}>
-                  <a href="{{ url_for('applications.index', **sort_link(f, column)) }}">{{ label }}{% if current %} <span aria-hidden="true">{{ '↑' if f.order == 'asc' else '↓' }}</span>{% endif %}</a>
-                </th>
-                {% if column == 'pay' %}<th>Where</th>{% endif %}
-              {% endfor %}
+              {# Job title and company share the first column, which stays put when the table scrolls sideways. #}
+              <th class="col-job">{{ sort_header('role') }} <span class="th-sep" aria-hidden="true">·</span> {{ sort_header('company') }}</th>
+              <th>{{ sort_header('stage') }}</th>
+              <th>{{ sort_header('applied') }}</th>
+              <th class="num">{{ sort_header('pay') }}</th>
+              <th>Where</th>
+              <th>{{ sort_header('updated') }}</th>
             </tr>
           </thead>
           <tbody>
             {% for job in jobs %}
-              <tr>
-                <td class="col-company">{{ job.company.name }}</td>
-                <td class="col-title"><a class="row-link" href="{{ url_for('applications.detail', job_id=job.id) }}">{{ job.role_title }}</a></td>
+              {% set address = url_for('applications.detail', job_id=job.id) %}
+              <tr data-href="{{ address }}">
+                <td class="col-job"><a class="row-link" href="{{ address }}">{{ job.role_title }}</a><span class="job-company">{{ job.company.name }}</span></td>
                 <td class="col-stage">{{ stage_pill(job.stage) }}</td>
                 <td class="col-meta">{% if job.applied_on %}<span class="phone-only">Applied </span>{{ job.applied_on|short_day }}{% endif %}</td>
                 <td class="col-meta num">{{ job.salary_min|salary_range(job.salary_max, job.currency) }}</td>
