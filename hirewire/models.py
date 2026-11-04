@@ -4,7 +4,9 @@
            ├─< applications                ├─< stage_changes
            ├─< contacts ──────────────┐    ├─< interviews
            ├─< documents              │    ├─< follow_ups
-           └─< saved_views            └──< application_contacts (with a role)
+           ├─< saved_views            └──< application_contacts (with a role)
+           ├── gmail_accounts (one)
+           └─< email_suggestions ──> applications
 
     applications.resume_id / cover_letter_id ──> documents
 
@@ -80,6 +82,9 @@ class User(Base):
     no_reply_days: Mapped[int] = mapped_column(default=21)  # then ask "Mark as No reply?"
     # The secret part of the calendar feed's address (/calendar/<token>.ics). Empty when off.
     calendar_token: Mapped[str | None] = mapped_column(String(64), unique=True)
+    # Quick add fetches other sites for you, so it has a limit per hour (quick_add.py).
+    quick_adds: Mapped[int] = mapped_column(default=0)
+    quick_add_window: Mapped[datetime | None]
 
 
 class Company(Base):
@@ -310,6 +315,56 @@ class Document(Base):
     @property
     def title(self):
         return f"{self.name} ({self.version_label})" if self.version_label else self.name
+
+
+class GmailAccount(Base):
+    """The Gmail inbox Hire Wire reads (gmail.py), with an app password kept
+    encrypted (crypto.py). Only one per user."""
+    __tablename__ = "gmail_accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), unique=True)
+    address: Mapped[str] = mapped_column(String(200))
+    password_encrypted: Mapped[str] = mapped_column(Text)  # never the password itself
+    last_checked_at: Mapped[datetime | None]
+    last_error: Mapped[str] = mapped_column(String(300), default="")
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+EMAIL_KINDS = {"applied": "Applied", "interview": "Interview", "rejection": "Rejection", "offer": "Offer"}
+SUGGESTION_STATUSES = ("pending", "accepted", "ignored")
+
+
+class EmailSuggestion(Base):
+    """What an email seems to say (mail_rules.py), waiting for you to accept or ignore it.
+    Only a short snippet is kept, never the whole email."""
+    __tablename__ = "email_suggestions"
+    __table_args__ = (
+        UniqueConstraint("user_id", "message_id"),  # an email is only ever suggested once
+        CheckConstraint(f"kind IN ({sql_list(EMAIL_KINDS)})", name="kind_known"),
+        CheckConstraint(f"status IN ({sql_list(SUGGESTION_STATUSES)})", name="status_known"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    message_id: Mapped[str] = mapped_column(String(300))
+    sender: Mapped[str] = mapped_column(String(300), default="")
+    subject: Mapped[str] = mapped_column(String(300), default="")
+    snippet: Mapped[str] = mapped_column(String(300), default="")
+    received_at: Mapped[datetime]
+    kind: Mapped[str] = mapped_column(String(10))
+    company_guess: Mapped[str] = mapped_column(String(120), default="")
+    role_guess: Mapped[str] = mapped_column(String(150), default="")
+    proposed_at: Mapped[datetime | None]  # an interview's time, if the email said
+    application_id: Mapped[int | None] = mapped_column(ForeignKey("applications.id", ondelete="SET NULL"))
+    status: Mapped[str] = mapped_column(String(10), default="pending")
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    application: Mapped["Application | None"] = relationship()
+
+    @property
+    def kind_label(self):
+        return EMAIL_KINDS[self.kind]
 
 
 class SavedView(Base):

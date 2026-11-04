@@ -44,6 +44,8 @@ def create_app(test_config=None):
         DATABASE=str(Path(app.instance_path) / "hirewire.sqlite"),
         # Set on the live site: then we use PostgreSQL (Neon) instead of SQLite.
         DATABASE_URL=os.environ.get("DATABASE_URL"),
+        # Encrypts Gmail app passwords (crypto.py). Locally it falls back to SECRET_KEY.
+        ENCRYPTION_KEY=os.environ.get("ENCRYPTION_KEY"),
         # Cookie safety: not readable by JavaScript (Flask's default), not sent
         # with forms from other sites, and only over HTTPS on the live site.
         SESSION_COOKIE_SAMESITE="Lax",
@@ -59,21 +61,26 @@ def create_app(test_config=None):
         app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     if on_render and app.config["SECRET_KEY"] == DEV_SECRET_KEY:
         raise RuntimeError("Set the SECRET_KEY environment variable on Render.")
+    if on_render and not app.config["ENCRYPTION_KEY"]:
+        raise RuntimeError("Set the ENCRYPTION_KEY environment variable on Render.")
     if on_render and not app.config["DATABASE_URL"]:
         # Without it we'd use a SQLite file, and Render forgets files on every restart.
         raise RuntimeError("Set the DATABASE_URL environment variable on Render (Neon's connection string).")
 
     from . import auth, db, formatting
     from .models import OUTCOMES, STAGE_LABELS, WORK_MODES
-    from .views import applications, board, companies, contacts, dashboard, documents, reminders, settings, stats
+    from .views import (
+        applications, board, companies, contacts, dashboard, documents, inbox, reminders, settings, stats,
+    )
 
     db.init_app(app)
     auth.init_app(app)
     formatting.init_app(app)
     reminders.init_app(app)
+    inbox.init_app(app)
     # auth comes first: its before_request (load_user) must run before the others'.
     for blueprint in (auth.bp, dashboard.bp, applications.bp, board.bp, reminders.bp, companies.bp, contacts.bp,
-                      documents.bp, stats.bp, settings.bp):
+                      documents.bp, stats.bp, inbox.bp, settings.bp):
         app.register_blueprint(blueprint)
 
     app.jinja_env.globals.update(APP_NAME="Hire Wire", STAGE_LABELS=STAGE_LABELS, WORK_MODES=WORK_MODES,

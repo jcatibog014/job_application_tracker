@@ -12,6 +12,7 @@
     <h1>{{ title }}</h1>
     {% block head_actions %}{% endblock %}
   </div>
+  {% if notice %}<p class="flash" role="status">{{ notice }}</p>{% endif %}
   {% if errors %}<p class="form-error" role="alert">Please check the fields marked below.</p>{% endif %}
   <form method="post" class="card form-card"
         action="{{ url_for('applications.edit', job_id=job.id) if job else url_for('applications.new') }}">

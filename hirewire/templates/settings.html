@@ -92,6 +92,45 @@
       </div>
     </section>
 
+    <section class="setting" id="gmail">
+      <div class="setting-text">
+        <h2>Gmail</h2>
+        <p>Hire Wire reads your recent job emails and suggests updates, like "Interview with Acme on Nov 12". Nothing changes until you accept.</p>
+        <p>It only reads. Emails stay unread, and only a short snippet of each is kept.</p>
+      </div>
+      <div class="stack">
+        {% if gmail_account %}
+          <p class="status-line"><span>Connected as <strong>{{ gmail_account.address }}</strong></span>
+            <span class="muted small">{% if gmail_account.last_checked_at %}Last checked {{ gmail_account.last_checked_at|nice_datetime }}{% else %}Not checked yet{% endif %}</span></p>
+          {% if gmail_account.last_error %}<p class="form-error">{{ gmail_account.last_error }}</p>{% endif %}
+          <div class="form-actions setting-account-actions">
+            <a class="button" href="{{ url_for('inbox.index') }}">See suggestions</a>
+            <form method="post" data-confirm="Disconnect Gmail? Its app password will be deleted.">
+              {{ csrf() }}<input type="hidden" name="action" value="gmail_disconnect">
+              <button class="button button-quiet" type="submit" {{ locked }}>Disconnect</button>
+            </form>
+          </div>
+        {% else %}
+          <ol class="steps">
+            <li>Turn on <strong>2-Step Verification</strong> in your Google account.</li>
+            <li>Open <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer">App passwords</a>, type "Hire Wire" and press <strong>Create</strong>.</li>
+            <li>Copy the 16 letters here. You can delete that app password in Google at any time.</li>
+          </ol>
+          <form method="post">
+            {{ csrf() }}
+            <input type="hidden" name="action" value="gmail_connect">
+            <fieldset class="stack plain-fieldset" {{ locked }}>
+              {{ field('address', 'Gmail address', request.form.address if request.form.action == 'gmail_connect' else '', errors.address,
+                       type='email', attrs='autocomplete="email" maxlength="200" placeholder="name@gmail.com"') }}
+              {{ field('app_password', 'App password', '', errors.app_password, type='password',
+                       hint='Not your Google password', attrs='autocomplete="off" placeholder="abcd efgh ijkl mnop"') }}
+              <div class="form-actions"><button class="button" type="submit">Connect Gmail</button></div>
+            </fieldset>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+
     <section class="setting">
       <div class="setting-text">
         <h2>Your Password</h2>

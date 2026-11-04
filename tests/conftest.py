@@ -1,4 +1,5 @@
 import os
+import socket
 
 import pytest
 from sqlalchemy import select
@@ -13,6 +14,19 @@ TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 
 CSRF = "test-csrf-token"
 PASSWORD = "correct horse"
+
+
+@pytest.fixture(autouse=True)
+def stay_offline(monkeypatch):
+    """Tests never go online (Gmail and job sites are faked). Any real network
+    connection fails loudly. A Neon test run needs the network, so it's skipped then."""
+    if TEST_DATABASE_URL:
+        return
+
+    def refuse(*args, **kwargs):
+        raise RuntimeError("A test tried to go online. Fake the network call instead.")
+    monkeypatch.setattr(socket.socket, "connect", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
 
 
 @pytest.fixture

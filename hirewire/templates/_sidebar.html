@@ -25,6 +25,7 @@
         {{ link('applications.index', 'Applications', section == 'applications' or section == 'reminders' and not on_schedule) }}
         {{ link('board.index', 'Board', section == 'board') }}
         {{ link('reminders.schedule', 'Schedule', on_schedule, attention_count) }}
+        {{ link('inbox.index', 'Email Suggestions', section == 'inbox', suggestion_count) }}
         {{ link('companies.index', 'Companies', section == 'companies') }}
         {{ link('contacts.index', 'Contacts', section == 'contacts') }}
         {{ link('documents.index', 'Documents', section == 'documents') }}

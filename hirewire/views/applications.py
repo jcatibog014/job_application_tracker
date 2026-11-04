@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import contains_eager, selectinload, undefer
 from werkzeug.datastructures import MultiDict
 
-from .. import applications, auth, companies, db, filters, forms, workflow
+from .. import applications, auth, companies, db, filters, forms, quick_add, workflow
 from ..auth import login_required
 from ..dates import local_today, utcnow
 from ..models import (
@@ -35,9 +35,9 @@ def document_choices(kind):
     return [("", "None")] + [(str(doc.id), doc.title) for doc in my_documents() if doc.kind in (kind, "other")]
 
 
-def form_page(template_values, errors, job=None):
+def form_page(template_values, errors, job=None, notice=None):
     return render_template(
-        "applications/form.html", values=template_values, errors=errors, job=job,
+        "applications/form.html", values=template_values, errors=errors, job=job, notice=notice,
         company_names=companies.names(db.session(), g.user.id),
         stages=[(stage, STAGE_LABELS[stage]) for stage in ACTIVE_STAGES],
         work_modes=[("", "Not sure")] + list(WORK_MODES.items()),
@@ -121,6 +121,35 @@ def new():
     s.commit()
     flash("The application has been added.")
     return redirect(url_for("applications.detail", job_id=job.id))
+
+
+@bp.route("/quick-add", methods=["GET", "POST"])
+@login_required
+def quick_add_page():
+    """Paste a posting's address; the new-application form opens filled in."""
+    if request.method == "GET":
+        return render_template("applications/quick_add.html", url="", error=None)
+    url, problem = forms.web_link(request.form, "url")
+    if problem or not url:
+        return render_template("applications/quick_add.html", url=request.form.get("url", ""),
+                               error=problem or "Paste the job posting's address."), 400
+    allowed = quick_add.take_a_turn(g.user, utcnow())
+    db.session().commit()
+    if not allowed:
+        return render_template("applications/quick_add.html", url=url, error=(
+            f"You can read {quick_add.HOURLY_LIMIT} pages an hour. Please wait a little, "
+            "or fill in the form yourself.")), 429
+    start = {"stage": "applied", "currency": "PHP", "posting_url": url}
+    try:
+        html, final_url = quick_add.fetch(url)
+    except quick_add.FetchProblem as problem:
+        return form_page(start, {}, notice=f"{problem} The link is saved, so fill in the rest yourself.")
+    found = quick_add.read_posting(html, final_url)
+    found["posting_url"] = url  # the address you gave, not where it redirected to
+    if not found.get("role_title"):
+        return form_page({**start, **found}, {}, notice="That page had no job details we could read. "
+                                                         "Fill in the rest yourself.")
+    return form_page({**start, **found}, {}, notice="Filled in from the posting. Check everything before you save.")
 
 
 @bp.get("/<int:job_id>")

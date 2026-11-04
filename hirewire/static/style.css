@@ -631,6 +631,25 @@ img { max-width: 100%; height: auto; display: block; }
 .ending-list li:last-child { border-bottom: 0; }
 .ending-count { font-weight: 700; }
 
+/* ---------- Email suggestions ---------- */
+
+.connect-card { max-width: 46rem; }
+.suggestion-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; max-width: 62rem; }
+.suggestion { margin: 0; }
+.suggestion-head { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .75rem; margin-bottom: .5rem; }
+.suggestion-subject { font-size: 1.05rem; margin: 0 0 .3rem; }
+.suggestion-snippet { color: var(--ink-soft); font-size: .92rem; margin: 0 0 .75rem; }
+.suggestion-change { margin: 0 0 .75rem; padding: .55rem .8rem; background: var(--surface-soft); border-radius: var(--radius-small); font-size: .93rem; }
+.suggestion-change:last-child { margin-bottom: 0; }
+.suggestion-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem 1rem; }
+@container main (min-width: 48rem) { .suggestion-form { grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr) minmax(0, 1.3fr); align-items: end; } }
+.suggestion-actions { grid-column: 1 / -1; }
+.email-kind { display: inline-flex; padding: .05rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+.email-kind-applied { background: var(--stage-applied-bg); color: var(--stage-applied-ink); }
+.email-kind-interview { background: var(--stage-interview-bg); color: var(--stage-interview-ink); }
+.email-kind-rejection { background: var(--stage-rejected-bg); color: var(--stage-rejected-ink); }
+.email-kind-offer { background: var(--stage-offer-bg); color: var(--stage-offer-ink); }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

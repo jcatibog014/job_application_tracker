@@ -1,13 +1,13 @@
 """Interviews, follow-ups, the Schedule page and the calendar feed."""
 from flask import Blueprint, abort, flash, g, redirect, render_template, request, url_for
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from .. import auth, calendar_feed, db, forms, interviews, reminders, workflow
 from ..auth import login_required
 from ..dates import local_today, utcnow
 from ..models import (
-    INTERVIEW, INTERVIEW_KINDS, NO_REPLY, OUTCOMES, Application, FollowUp, Interview, User,
+    INTERVIEW, INTERVIEW_KINDS, NO_REPLY, OUTCOMES, Application, EmailSuggestion, FollowUp, Interview, User,
 )
 from ..ownership import get_child, get_mine
 
@@ -265,7 +265,10 @@ def calendar(token):
 def init_app(app):
     @app.context_processor
     def menu_counts():
-        """The number on Schedule in the menu: follow-ups overdue or due today."""
+        """The numbers in the menu: follow-ups overdue or due today, and email suggestions waiting."""
         if g.get("user") is None:
             return {}
-        return {"attention_count": reminders.needs_attention_count(db.session(), g.user, today())}
+        waiting = db.session().scalar(select(func.count()).select_from(EmailSuggestion).where(
+            EmailSuggestion.user_id == g.user.id, EmailSuggestion.status == "pending"))
+        return {"attention_count": reminders.needs_attention_count(db.session(), g.user, today()),
+                "suggestion_count": waiting}
