@@ -14,7 +14,7 @@
           {{ csrf() }}
           {# Robots fill in every field; people never see this one. #}
           <label class="hp" aria-hidden="true">Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
-          {{ field('username', 'Username', username, errors.username, hint='Letters, numbers, - and _',
+          {{ field('username', 'Username', username, errors.username,
                    attrs='autocomplete="username" required autofocus maxlength="40"') }}
           {{ field('password', 'Password', '', errors.password, type='password', hint='At least 8 characters',
                    attrs='autocomplete="new-password" required') }}
