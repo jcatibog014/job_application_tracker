@@ -97,11 +97,12 @@ function setUpFilters() {
   });
 }
 
-// A click anywhere on a row opens its page (the title is the real link, for keyboards).
+// A click anywhere on a table row or a Board card opens its page (the title is the
+// real link, for keyboards). A drag on the Board never fires a click.
 function setUpRowLinks() {
-  document.querySelectorAll("tr[data-href]").forEach((row) => {
+  document.querySelectorAll("tr[data-href], .board-card[data-href]").forEach((row) => {
     row.addEventListener("click", (event) => {
-      if (event.target.closest("a, button, input, select, label")) return;
+      if (event.target.closest("a, button, input, select, label, details")) return;
       if (String(getSelection())) return;  // selecting text to copy isn't a click to open
       location.href = row.dataset.href;
     });
