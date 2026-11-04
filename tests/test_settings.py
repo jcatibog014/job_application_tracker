@@ -64,6 +64,12 @@ def test_dates_follow_the_time_zone():
     assert to_local(moment, "Not/AZone").day == 4  # unknown falls back to Manila
 
 
+def test_save_buttons_watch_for_changes(me):
+    page = me.get("/settings/").get_data(as_text=True)
+    # The time zone and reminder forms tell app.js to wake their Save button on a change.
+    assert page.count("data-watch-changes") == 2
+
+
 def test_settings_links_in_the_menu(client, user_id):
     page = log_in_as(client, user_id).get("/dashboard/").data
     assert b'href="/settings/"' in page

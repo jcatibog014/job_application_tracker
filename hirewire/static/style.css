@@ -148,7 +148,8 @@ h2 { font-size: 1.2rem; }
 h3 { font-size: 1.05rem; }
 p { margin: 0 0 1em; }
 a { color: var(--accent); text-underline-offset: .15em; }
-a:hover { color: var(--accent-strong); }
+/* Links are underlined; on hover the line gets thicker too, not only the colour. */
+a:hover { color: var(--accent-strong); text-decoration-thickness: 2px; }
 img { max-width: 100%; height: auto; display: block; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -189,6 +190,8 @@ img { max-width: 100%; height: auto; display: block; }
 .flash-error { background: var(--danger-soft); border-left-color: var(--danger); }
 .flash-close { flex: none; width: 1.6rem; height: 1.6rem; margin: -.1rem 0; padding: 0; background: none; border: 0; border-radius: 50%; color: var(--ink-soft); font-size: 1.15rem; line-height: 1; cursor: pointer; }
 .flash-close:hover { background: var(--surface); color: var(--ink); }
+/* Without JavaScript, the login page's message floats at the top right instead of squeezing the panel. */
+html:not(.js) .welcome-layout .flashes { position: absolute; top: 1rem; right: 1rem; z-index: 5; width: min(26rem, calc(100% - 2rem)); }
 /* With JavaScript: toasts in the bottom right corner (across the bottom on phones). */
 .js .flashes { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 50; width: min(26rem, calc(100% - 2rem)); margin: 0; }
 .js .flash { background: var(--surface); border: 1px solid var(--rule); border-left: 4px solid var(--accent); box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / .18); animation: toast-in .2s ease-out; }
@@ -375,6 +378,9 @@ img { max-width: 100%; height: auto; display: block; }
 .theme-choice input:checked + span { background: var(--accent); color: var(--on-accent); font-weight: 600; }
 .theme-choice input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: -4px; }
 .copy-line { display: block; width: 100%; padding: .6rem .75rem; background: var(--surface-soft); border: 1px solid var(--rule); border-radius: var(--radius-small); font-family: Consolas, Menlo, monospace; font-size: .85rem; color: var(--ink); }
+/* Settings: Save looks asleep until something in its form changes. */
+.button.is-waiting { background: var(--surface); color: var(--ink-soft); border-color: var(--control-border); font-weight: 500; box-shadow: none; }
+.unsaved-note { color: var(--warning-ink); font-size: .88rem; font-weight: 600; }
 .status-line { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin: 0 0 1rem; }
 
 /* ---------- Stage pills ---------- */
@@ -429,7 +435,12 @@ html { scrollbar-color: var(--rule-strong) var(--bg); }
 .company-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: 1rem; }
 .company-card { position: relative; margin: 0; display: flex; flex-direction: column; }
 .company-card:hover { border-color: var(--accent); }
-.company-card h2 { font-size: 1.05rem; margin-bottom: .25rem; }
+.company-card h2 { font-size: 1.05rem; margin: 0; min-width: 0; }
+.company-card-head { display: flex; align-items: center; gap: .65rem; margin-bottom: .35rem; }
+.company-card-head .company-badge { width: 2.1rem; height: 2.1rem; font-size: .95rem; }
+.company-title { display: inline-flex; align-items: center; gap: .7rem; }
+.company-title .company-badge { width: 2.4rem; height: 2.4rem; font-size: 1.05rem; }
+.doc-actions { white-space: nowrap; text-align: right; }
 .company-card p { margin: 0; }
 .company-count { margin-top: auto !important; padding-top: .75rem; font-size: .88rem; font-weight: 600; color: var(--ink-soft); }
 
@@ -640,7 +651,7 @@ html { scrollbar-color: var(--rule-strong) var(--bg); }
 .snooze-menu { position: absolute; right: 0; top: calc(100% + .3rem); z-index: 4; display: grid; min-width: 8rem; margin: 0; padding: .3rem; background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius-small); box-shadow: 0 .25rem 1rem rgb(0 0 0 / .12); }
 .snooze-menu .link-button { padding: .4rem .6rem; border-radius: var(--radius-small); color: var(--ink); text-align: left; }
 .snooze-menu .link-button:hover { background: var(--surface-soft); text-decoration: none; }
-.icon-link { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: var(--radius-small); color: var(--ink-soft); }
+.icon-link { display: inline-flex; align-items: center; justify-content: center; width: 2.25rem; height: 2.25rem; border-radius: var(--radius-small); color: var(--ink-soft); }
 .icon-link:hover { background: var(--surface-soft); color: var(--accent); }
 .date-tile { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 3.1rem; height: 3.3rem; border: 1px solid var(--rule); border-radius: var(--radius-small); background: var(--surface-soft); line-height: 1.1; }
 .date-month { font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-strong); }

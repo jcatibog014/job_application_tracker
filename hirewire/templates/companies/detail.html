@@ -4,7 +4,7 @@
 {% block content %}
   <a class="back-link" href="{{ url_for('companies.index') }}">&larr; Companies</a>
   <div class="page-head">
-    <h1>{{ company.name }}</h1>
+    <h1 class="company-title"><span class="company-badge company-badge-{{ company.id % 6 }}" aria-hidden="true">{{ company.name[:1]|upper }}</span>{{ company.name }}</h1>
     <div class="actions">
       <a class="button button-quiet" href="{{ url_for('companies.edit', company_id=company.id) }}">{{ pencil_icon() }} Edit</a>
       <a class="button" href="{{ url_for('applications.new', company_name=company.name) }}">Add application</a>
