@@ -120,6 +120,7 @@ All companies, people and emails in these pictures are made up. They come from T
 | pytest | Test tool | Checks that everything works, without going online |
 | Playwright | Browser tool | Takes the pictures for this page |
 | Render | Hosting platform | Runs the live site |
+| Plus Jakarta Sans | Font | Headings and the name. The two small files are inside the app. |
 | HTML, CSS, JavaScript, SVG | Languages | The pages and the charts. They also work without JavaScript. |
 
 ## Run It on Your Computer

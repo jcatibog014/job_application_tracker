@@ -42,11 +42,12 @@
 
 {# The app's mark: two points joined by a wire. #}
 {% macro mark() %}
-  <svg class="mark" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+  {# A solid tile (currentColor) with the wire on it. style.css colours the wire (--mark-wire). #}
+  <svg class="mark" viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
     <rect width="32" height="32" rx="8" fill="currentColor"></rect>
-    <path d="M9 21 C 13 21, 13 11, 17 11 S 21 21, 23 21" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"></path>
-    <circle cx="9" cy="21" r="2.6" fill="#fff"></circle>
-    <circle cx="23" cy="21" r="2.6" fill="#fff"></circle>
+    <path class="mark-wire" d="M9 21 C 13 21, 13 11, 17 11 S 21 21, 23 21" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"></path>
+    <circle class="mark-dot" cx="9" cy="21" r="3" fill="#fff"></circle>
+    <circle class="mark-dot" cx="23" cy="21" r="3" fill="#fff"></circle>
   </svg>
 {% endmacro %}
 
